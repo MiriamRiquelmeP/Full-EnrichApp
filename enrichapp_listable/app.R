@@ -60,9 +60,9 @@ sidebar <- dashboardSidebar(useShinyalert(),
                                 menuItem(
                                     pickerInput(
                                         inputId = "specie",
-                                        label = "Select specie",
-                                        choices = list( "Human" = "Hs", "Mouse" = "Mm", "Ratus" = "Rn"),
-                                        options = list(title = "specie"),
+                                        label = "Select species",
+                                        choices = list( "Human" = "Hs", "Mouse" = "Mm", "Rattus" = "Rn"),
+                                        options = list(title = "species"),
                                         selected = "Mm"
                                     ) 
                                 ),

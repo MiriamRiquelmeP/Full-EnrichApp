@@ -3,7 +3,7 @@ library(AnnotationDbi)
 library(org.Mm.eg.db) #Mus musculus
 library(org.Hs.eg.db) #Homo sapiens
 #library(org.Dr.eg.db) #Danio rerio (zebra fish)
-library(org.Rn.eg.db) #Ratus norvegicus
+library(org.Rn.eg.db) #Rattus norvegicus
 #library(org.Mmu.eg.db) #Macaca mulata
 library(chorddiag)
 library(EnsDb.Mmusculus.v79)
@@ -55,10 +55,10 @@ sidebar <- dashboardSidebar(useShinyalert(),
                                 menuItem(
                                     pickerInput(
                                         inputId = "specie",
-                                        label = "1. Select specie",
+                                        label = "1. Select species",
                                         choices = list( "Human" = "Hs",
-                                                        "Mouse" = "Mm", "Ratus" = "Rn"),
-                                        options = list(title = "specie"),
+                                                        "Mouse" = "Mm", "Rattus" = "Rn"),
+                                        options = list(title = "species"),
                                         selected = NULL
                                     ) 
                                 )
@@ -140,7 +140,7 @@ body <- dashboardBody(
               Make sure that your objects matched this and enjoy your enrichment analysis ;)"),
             br(),
             h3("Get the app ready to be used!"),
-            p("First of all, select the specie of your experiment. 
+            p("First of all, select the species of your experiment. 
               Then the option to choose between entering your count matrix / DESeq object  
               containing your analysis will be unlocked. Make your choice and upload your files. 
               Select your conditions and/or design and when the loading symbol stops moving, 
