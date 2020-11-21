@@ -3,7 +3,7 @@ library(AnnotationDbi)
 library(org.Mm.eg.db) #Mus musculus
 library(org.Hs.eg.db) #Homo sapiens
 #library(org.Dr.eg.db) #Danio rerio (zebra fish)
-library(org.Rn.eg.db) #Ratus norvegicus
+library(org.Rn.eg.db) #Rattus norvegicus
 #library(org.Mmu.eg.db) #Macaca mulata
 library(chorddiag)
 library(EnsDb.Mmusculus.v79)
@@ -32,19 +32,21 @@ library(scales)
 library(stringr)
 library(shinybusy)
 library(visNetwork)
+library(ggrepel)
 source("global.R")
 source("utils.R")
 options(shiny.maxRequestSize = 3000*1024^2)
 
+
 ### HEADER ############ 
-header <- dashboardHeader(title = "Gene list enrichment and report", 
+header <- dashboardHeader(title = "Gene list enrichment", 
                           titleWidth = 300, 
                           dropdownMenuOutput("messageMenu"),
                           tags$li(class="dropdown", actionButton("notesButton","Notes"),
                                   style="margin-top:8px; margin-right: 5px"),
                           tags$li(class = "dropdown", actionButton("aboutButton", "About"),
                                   style="margin-top:8px; margin-right: 5px")
-)
+                          )
 ### SIDEBAR ##########
 sidebar <- dashboardSidebar(useShinyalert(),
                             useShinyjs(),
@@ -58,9 +60,9 @@ sidebar <- dashboardSidebar(useShinyalert(),
                                 menuItem(
                                     pickerInput(
                                         inputId = "specie",
-                                        label = "Select specie",
-                                        choices = list( "Human" = "Hs", "Mouse" = "Mm", "Ratus" = "Rn"),
-                                        options = list(title = "specie"),
+                                        label = "Select species",
+                                        choices = list( "Human" = "Hs", "Mouse" = "Mm", "Rattus" = "Rn"),
+                                        options = list(title = "species"),
                                         selected = "Mm"
                                     ) 
                                 ),
@@ -87,19 +89,36 @@ sidebar <- dashboardSidebar(useShinyalert(),
                                     fluidRow(column(12, align = "center", offset=0,
                                                     uiOutput("report")))))
                                 
-                            ), style = "position: absolute; bottom:0;width:100%;")
-                            )
+                            ),
+                            tags$a(href='https://jacob.cea.fr/drf/ifrancoisjacob/Pages/Departements/MIRCen/themes/astrocytes-reactifs-biomarqueurs-imagerie-cibles-therapeutiques.aspx', target="_blank",
+                                   tags$img(src='mircen.png',width='50%',
+                                            style="padding: 5px; position: absolute; bottom:10px; left:0") ),
+                            tags$a(href='http://www.bioinformatica.imib.es', target="_blank",
+                                   tags$img(src='imib.png',width='50%',
+                                            style="padding: 5px; float: right;") ),
+                            
+                            style = "position: absolute; bottom:0;width:100%;"
+                            ) #fin div
+                            ) # fin sideDashBoard
 
 ### BODY ###############
 body <- dashboardBody(
       tags$script(HTML("$('body').addClass('fixed');")),
       add_busy_gif(src="dna-mini.gif", position = "full-page", width = 10, height = 10 ),
-     tags$head(
-       tags$link(rel = "stylesheet", type = "text/css", href = "customDark.css")
-     ),
+     #htmltools::includeCSS("./www/customDark.css"),
+      #tags$head(
+        #HTML("<link rel = 'stylesheet' type = 'text/css' href = 'customDark.css'>"),
+      #),
     setShadow(class = "shiny-plot-output"),
     setShadow( class = "box"),
     setShadow( class = "svg-container"),
+    tags$head(
+      HTML("<link rel = 'stylesheet' type = 'text/css' href = 'customDark.css'>"),
+      tags$style(HTML(".irs-min, .irs-max {
+              color: rgb(215,215,215) !important;
+              background-color: rgb(45,55,65) !important;
+          }"))
+      ),
   bsAlert("alert"),
   tabItems(
     # Initial INFO
@@ -125,7 +144,7 @@ body <- dashboardBody(
                 corner of the app. Choose your object and enjoy your enrichment analysis ;)"),
             br(),
             h3("Get the app ready to use!"),
-            p("First of all, select the specie of your experiment. 
+            p("First of all, select the species of your experiment. 
               Then the option to enter your RDS object containing your 
               analysis will be unlocked. Upload it and wait for the loading 
               to be completed. When the loading symbol stops moving, 
@@ -201,8 +220,19 @@ server <- function(input, output, session) {
       <img src='linkedin_little.svg'> 
       </a> <a href='mailto:fernando.perez@ffis.es'> <img src='email.svg'></a><br>
       For any suggestion or bug, please contact us"),
-                 imageUrl = "dna-svg-small-13.gif", 
+                 imageUrl = "dna-svg-small-13.gif",
                  imageWidth = 200, imageHeight = 100, html=TRUE)})
+  
+    
+    
+  observeEvent(input$morinfo1,{
+    showModal(
+      modalDialog(
+        size="l",
+        tags$iframe(src="https://155.54.120.105/shiny/enrich_listable/pres1.html",  width="850px", height="700px")
+      )
+    )
+  })
   
   # variables reactivas ######
   annotation <- reactive({input$annotation})
@@ -239,9 +269,9 @@ server <- function(input, output, session) {
           } else{
             validatedGene$list <- validateGeneList(input$geneList, specie(), annotation() )
             data$df <- formatData( validatedGene$list, specie(), annotation() )
-            lost <- which(is.na(data$df$ENTREZID))
-            gene$lost <- data$df$ENSEMBL[lost]
-            if(length(lost)!=0){ data$df <- data$df[-lost, ] }
+            # lost <- which(is.na(data$df$ENTREZID))
+            # gene$lost <- data$df$ENSEMBL[lost]
+            # if(length(lost)!=0){ data$df <- data$df[-lost, ] }
             data$df$SYMBOL <- ifelse(is.na(data$df$SYMBOL), data$df$ENSEMBL, data$df$SYMBOL )
             }
         }
@@ -253,9 +283,9 @@ server <- function(input, output, session) {
           } else{
             validatedGene$list <- validateGeneList(input$geneList, specie(), annotation() )
             data$df <- formatData( validatedGene$list, specie(), annotation() )
-            lost <- which(is.na(data$df$ENTREZID))
-            gene$lost <- data$df$SYMBOL[lost]
-            if(length(lost)!=0){ data$df <- data$df[-lost, ] }
+            # lost <- which(is.na(data$df$ENTREZID))
+            # gene$lost <- data$df$SYMBOL[lost]
+            # if(length(lost)!=0){ data$df <- data$df[-lost, ] }
           }
           }
         }
@@ -271,9 +301,9 @@ server <- function(input, output, session) {
                        type = "error")
           } else{
                 data$df <- formatData( validatedGene$list, specie(), annotation() )
-                lost <- which(is.na(data$df$ENTREZID))
-                gene$lost <- data$df$ENSEMBL[lost]
-                if(length(lost)!=0){ data$df <- data$df[-lost, ] }
+                # lost <- which(is.na(data$df$ENTREZID))
+                # gene$lost <- data$df$ENSEMBL[lost]
+                # if(length(lost)!=0){ data$df <- data$df[-lost, ] }
                 data$df$SYMBOL <- ifelse(is.na(data$df$SYMBOL), data$df$ENSEMBL, data$df$SYMBOL )
           }
         }
@@ -284,9 +314,9 @@ server <- function(input, output, session) {
                        type = "error")
           } else{
                 data$df <- formatData( validatedGene$list, specie(), annotation() )
-                lost <- which(is.na(data$df$ENTREZID))
-                gene$lost <- data$df$SYMBOL[lost]
-                if(length(lost)!=0){ data$df <- data$df[-lost, ] }
+                # lost <- which(is.na(data$df$ENTREZID))
+                # gene$lost <- data$df$SYMBOL[lost]
+                # if(length(lost)!=0){ data$df <- data$df[-lost, ] }
           }
         }
       }
@@ -300,7 +330,6 @@ server <- function(input, output, session) {
     }
   })
   
-  #TODO: Definir qué hacer con los NAs, eliminar, reportar, etc
   ## Pulsar Enrich Button ################################################
   observeEvent(input$enrichButtons,{
     if( dim(data$df)[2]==3 ){
@@ -323,6 +352,9 @@ server <- function(input, output, session) {
     })
   observeEvent(input$enrichButton,{
     if( dim(data$df)[2]==5 ){
+      lost <- which(is.na(data$df$ENTREZID))
+      gene$lost <- data$df$SYMBOL[lost]
+      if(length(lost)!=0){ datadf <- data$df[-lost, ] }else{datadf <- data$df}
       genes$Up <- data$df[data$df$logFC >= logfc()[2] & data$df$pval <= padj(),
                           c("SYMBOL","ENTREZID")]
       genes$Down <- data$df[data$df$logFC <= logfc()[1] & data$df$pval <= padj(),
@@ -613,6 +645,27 @@ server <- function(input, output, session) {
           height = "80%"
       )
   })
+#....................... ####
+## table preview ######################################
+output$tablepreview <- renderDataTable({
+  validate(need(data$df, ""))
+  customButtons <- list(
+        list(extend = "copy", title="Preview table"),
+        list(extend="collection", buttons = c("csv", "excel"),
+             text="Download", filename="coldata", title="Preview table" ) )
+    
+    datatable( data$df, extensions = "Buttons",
+               rownames=FALSE,
+               filter = list(position="top", clear=FALSE),
+               options = list(
+                 dom = "Bfrtipl",
+                 lengthMenu = list(c(10,25,50,100,-1), c(10,25,50,100,"All")),
+                 buttons = customButtons,
+                 list(pageLength = 10, white_space = "normal")
+               )
+    )
+})
+
 # ....................... ####
   # volcano plot #########
   output$volcano <- renderPlot( {
@@ -627,7 +680,8 @@ server <- function(input, output, session) {
                     pCutoff = padj(),
                     FCcutoffUP = logfc()[2],
                     FCcutoffDOWN = logfc()[1],
-                    xlim = c(-8, 8),
+                  drawconnectors = TRUE,
+                    #xlim = c(-8, 8),
                     col = c("gray", "#7cccc3", "#d99c01", input$upColor, input$downColor))
     })
 
@@ -636,16 +690,16 @@ xy <- reactive({
   res$`-log10padj` <- (-log10(res$pval)) 
   nearPoints(res, input$plot_click1, xvar = "logFC", yvar = "-log10padj")
 })
-output$texto1 <- renderTable( digits = -2, {
+output$texto1 <- renderTable( digitgeoms = -2, {
         xy <- xy()
         xy[,c(2,4,5,6)]
     })
-# ....................... ####
+#....................... ####
 ## karyoplot ######################################
 output$karyoPlot <- renderPlot({
     validate(need(data$df, "Load file to render plot"))
     krtp(data$df, specie = specie(), pval = padj(), fcdown = logfc()[1],
-         fcup = logfc()[2], bg="#46505a", coldown="#4ADBFF" , colup="#f7665c")
+         fcup = logfc()[2], bg="#46505a", coldown="#4ADBFF" , colup="#f7665c", annotation=annotation() )
 })
 # .......................####
   # variables KEGG ALL ##########################
@@ -743,7 +797,7 @@ output$karyoPlot <- renderPlot({
   output$cnetAllKegg <- renderPlot({
     validate(need(kgg$all, "Load file and select to render Net Plot"))
     validate(need(rowsAll(), "Select the paths of interest to render NetPlot"))
-    customCnetKegg(kgg$all, rowsAll(), genesUp = data$df, genesDown = NULL)
+    customCnetKegg(kgg$all, rowsAll(), genesUp = datadf, genesDown = NULL)
   })
   output$visnetKeggAll <- renderVisNetwork({
     validate(need(kgg$all, "Load file and select to render Net Plot"))
@@ -842,7 +896,7 @@ output$karyoPlot <- renderPlot({
   output$cnetKeggUp <- renderPlot({
     validate(need(kgg$up, "Load file and select to render Net Plot"))
     validate(need(rowsUp(), "Select the paths of interest to render NetPlot"))
-    customCnetKegg(kgg$up, rowsUp(), genesUp = data$df, genesDown = NULL)
+    customCnetKegg(kgg$up, rowsUp(), genesUp = datadf, genesDown = NULL)
   })
   output$visnetKeggUp <- renderVisNetwork({
     validate(need(kgg$up, "Load file and select to render Net Plot"))
@@ -940,7 +994,7 @@ output$karyoPlot <- renderPlot({
   output$cnetKeggDown <- renderPlot({
     validate(need(kgg$down, "Load file and select to render Net Plot"))
     validate(need(rowsDown(), "Select the paths of interest to render NetPlot"))
-    customCnetKegg(kgg$down, rowsDown(), genesDown = data$df, genesUp = NULL)
+    customCnetKegg(kgg$down, rowsDown(), genesDown = datadf, genesUp = NULL)
   })
   output$visnetKeggDown <- renderVisNetwork({
     validate(need(kgg$down, "Load file and select to render Net Plot"))
@@ -1024,17 +1078,17 @@ output$karyoPlot <- renderPlot({
   output$gobarplotAllBP <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
     bprowsall <- bprowsall()
-    goBarplot(enrichGO = go$all, resGO = data$df, genes= genes$all,
+    goBarplot(enrichGO = go$all, resGO = datadf, genes= genes$all,
               category = "BP", nrows = bprowsall)
   })
   # GO circle BP all #####################
   output$goCircleAllBP <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
-    validate(need(data$df,""))
+    validate(need(datadf,""))
     validate(need( bprowsall() , "Select at least 4 rows"))
     bprowsall <- bprowsall()
     if(length(bprowsall)>=4){
-      circ <- data2circle(go=go$all[bprowsall, ], res=data$df, genes=genes$all)
+      circ <- data2circle(go=go$all[bprowsall, ], res=datadf, genes=genes$all)
       circle(circ, label.size = 3, nsub = length(bprowsall), table.legend = FALSE)
     }
   })
@@ -1095,17 +1149,17 @@ output$karyoPlot <- renderPlot({
   output$gobarplotAllMF <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
     mfrowsall <- mfrowsall()
-    goBarplot(enrichGO = go$all, resGO = data$df, genes= genes$all,
+    goBarplot(enrichGO = go$all, resGO = datadf, genes= genes$all,
               category = "MF", nrows = mfrowsall)
   })
   # GO circle MF all #####################
   output$goCircleAllMF <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
-    validate(need(data$df,""))
+    validate(need(datadf,""))
     validate(need( mfrowsall() , "Select at least 4 rows"))
     mfrowsall <- mfrowsall()
     if(length(mfrowsall)>=4){
-      circ <- data2circle(go=go$all[mfrowsall, ], res=data$df, genes=genes$all)
+      circ <- data2circle(go=go$all[mfrowsall, ], res=datadf, genes=genes$all)
       circle(circ, label.size = 3, nsub = length(mfrowsall), table.legend = FALSE)
     }
   })
@@ -1166,17 +1220,17 @@ output$karyoPlot <- renderPlot({
   output$gobarplotAllCC <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
     ccrowsall <- ccrowsall()
-    goBarplot(enrichGO = go$all, resGO = data$df, genes= genes$all,
+    goBarplot(enrichGO = go$all, resGO = datadf, genes= genes$all,
               category = "CC", nrows = ccrowsall)
   })
   # GO circle CC all #####################
   output$goCircleAllCC <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
-    validate(need(data$df,""))
+    validate(need(datadf,""))
     validate(need( ccrowsall() , "Select at least 4 rows"))
     ccrowsall <- ccrowsall()
     if(length(ccrowsall)>=4){
-      circ <- data2circle(go=go$all[ccrowsall, ], res=data$df, genes=genes$all)
+      circ <- data2circle(go=go$all[ccrowsall, ], res=datadf, genes=genes$all)
       circle(circ, label.size = 3, nsub = length(ccrowsall), table.legend = FALSE)
     }
   })
@@ -1225,17 +1279,17 @@ output$karyoPlot <- renderPlot({
   output$gobarplotUpBP <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
     bprowsup <- bprowsup()
-    goBarplot(enrichGO = go$up, resGO = data$df, genes= genes$Up,
+    goBarplot(enrichGO = go$up, resGO = datadf, genes= genes$Up,
               category = "BP", nrows = bprowsup)
   })
     # GO circle BP Up #####################
   output$goCircleUpBP <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
-    validate(need(data$df,""))
+    validate(need(datadf,""))
     validate(need( bprowsup() , "Select at least 4 rows"))
     bprowsup <- bprowsup()
     if(length(bprowsup)>=4){
-      circ <- data2circle(go=go$up[bprowsup, ], res=data$df, genes=genes$Up)
+      circ <- data2circle(go=go$up[bprowsup, ], res=datadf, genes=genes$Up)
       circle(circ, label.size = 3, nsub = length(bprowsup), table.legend = FALSE)
     }
   })
@@ -1286,17 +1340,17 @@ output$karyoPlot <- renderPlot({
   output$gobarplotUpMF <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
     mfrowsup <- mfrowsup()
-    goBarplot(enrichGO = go$up, resGO = data$df, genes= genes$Up,
+    goBarplot(enrichGO = go$up, resGO = datadf, genes= genes$Up,
               category = "MF", nrows = mfrowsup)
   })
   # GO circle MF Up #####################
   output$goCircleUpMF <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
-    validate(need(data$df,""))
+    validate(need(datadf,""))
     validate(need( mfrowsup() , "Select at least 4 rows"))
     mfrowsup <- mfrowsup()
     if(length(mfrowsup)>=4){
-      circ <- data2circle(go=go$up[mfrowsup, ], res=data$df, genes=genes$Up)
+      circ <- data2circle(go=go$up[mfrowsup, ], res=datadf, genes=genes$Up)
       circle(circ, label.size = 3, nsub = length(mfrowsup), table.legend = FALSE)
     }
   })
@@ -1347,17 +1401,17 @@ output$karyoPlot <- renderPlot({
   output$gobarplotUpCC <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
     ccrowsup <- ccrowsup()
-    goBarplot(enrichGO = go$up, resGO = data$df, genes= genes$Up,
+    goBarplot(enrichGO = go$up, resGO = datadf, genes= genes$Up,
               category = "CC", nrows = ccrowsup)
   })
   # GO circle CC Up #####################
   output$goCircleUpCC <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
-    validate(need(data$df,""))
+    validate(need(datadf,""))
     validate(need( ccrowsup() , "Select at least 4 rows"))
     ccrowsup <- ccrowsup()
     if(length(ccrowsup)>=4){
-      circ <- data2circle(go=go$up[ccrowsup, ], res=data$df, genes=genes$Up)
+      circ <- data2circle(go=go$up[ccrowsup, ], res=datadf, genes=genes$Up)
       circle(circ, label.size = 3, nsub = length(ccrowsup), table.legend = FALSE)
     }
   })
@@ -1407,17 +1461,17 @@ output$karyoPlot <- renderPlot({
   output$gobarplotDownBP <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
     bprowsdown <- bprowsdown()
-    goBarplot(enrichGO = go$down, resGO = data$df, genes= genes$Down,
+    goBarplot(enrichGO = go$down, resGO = datadf, genes= genes$Down,
               category = "BP", nrows = bprowsdown)
   })
   # GO circle BP Down #####################
   output$goCircleDownBP <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
-    validate(need(data$df,""))
+    validate(need(datadf,""))
     validate(need( bprowsdown() , "Select at least 4 rows"))
     bprowsdown <- bprowsdown()
     if(length(bprowsdown)>=4){
-      circ <- data2circle(go=go$down[bprowsdown, ], res=data$df, genes=genes$Down)
+      circ <- data2circle(go=go$down[bprowsdown, ], res=datadf, genes=genes$Down)
       circle(circ, label.size = 3, nsub = length(bprowsdown), table.legend = FALSE)
     }
   })
@@ -1468,17 +1522,17 @@ output$karyoPlot <- renderPlot({
   output$gobarplotDownMF <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
     mfrowsdown <- mfrowsdown()
-    goBarplot(enrichGO = go$down, resGO = data$df, genes= genes$Down,
+    goBarplot(enrichGO = go$down, resGO = datadf, genes= genes$Down,
               category = "MF", nrows = mfrowsdown)
   })
   # GO circle MF Down #####################
   output$goCircleDownMF <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
-    validate(need(data$df,""))
+    validate(need(datadf,""))
     validate(need( mfrowsdown() , "Select at least 4 rows"))
     mfrowsdown <- mfrowsdown()
     if(length(mfrowsdown)>=4){
-      circ <- data2circle(go=go$down[mfrowsdown, ], res=data$df, genes=genes$Down)
+      circ <- data2circle(go=go$down[mfrowsdown, ], res=datadf, genes=genes$Down)
       circle(circ, label.size = 3, nsub = length(mfrowsdown), table.legend = FALSE)
     }
   })
@@ -1529,17 +1583,17 @@ output$karyoPlot <- renderPlot({
   output$gobarplotDownCC <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
     ccrowsdown <- ccrowsdown()
-    goBarplot(enrichGO = go$down, resGO = data$df, genes= genes$Down,
+    goBarplot(enrichGO = go$down, resGO = datadf, genes= genes$Down,
               category = "CC", nrows = ccrowsdown)
   })
   # GO circle CC Down #####################
   output$goCircleDownCC <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
-    validate(need(data$df,""))
+    validate(need(datadf,""))
     validate(need( ccrowsdown() , "Select at least 4 rows"))
     ccrowsdown <- ccrowsdown()
     if(length(ccrowsdown)>=4){
-      circ <- data2circle(go=go$down[ccrowsdown, ], res=data$df, genes=genes$Down)
+      circ <- data2circle(go=go$down[ccrowsdown, ], res=datadf, genes=genes$Down)
       circle(circ, label.size = 3, nsub = length(ccrowsdown), table.legend = FALSE)
     }
   })

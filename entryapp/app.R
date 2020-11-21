@@ -193,7 +193,7 @@ ui <- dashboardPage(
               height = "250px",
               tags$p("Enter a DESeq2 object with the designs or contrasts you are interested in, 
                      or a counting matrix plus a sample table information; indicate the 
-                     annotation and the species and generate a full functional enrichment analysis, plus other extra images with many tables and plots, based mainly
+                     annotation and the specie and generate a full functional enrichment analysis, plus other extra images with many tables and plots, based mainly
                      on Kyoto Encyclopedia of Genes and Genomes (", a("Kegg", href="https://www.genome.jp/kegg/pathway.html"), 
                      ") pathways database, Gene Ontology terms resource (", a("GO", href="http://geneontology.org"), ") 
                      and Gene Set Enrichment Analysis (", a("GSEA", href="https://www.gsea-msigdb.org/gsea/index.jsp"),")."),
@@ -239,7 +239,18 @@ ui <- dashboardPage(
                   ) #fin column
               ) # fin fluid row
           )) # fin miboxplus 3
-      ) # fin fluidrow 
+      ), # fin fluidrow 
+      fluidRow(
+      #tags$div(
+        tags$a(href='https://jacob.cea.fr/drf/ifrancoisjacob/Pages/Departements/MIRCen/themes/astrocytes-reactifs-biomarqueurs-imagerie-cibles-therapeutiques.aspx', target="_blank",
+               tags$img(src='mircen.png',width='60%',
+                        style="padding: 10px; position: absolute; bottom:10px; left:0") ),
+        tags$a(href='http://www.bioinformatica.imib.es', target="_blank",
+               tags$img(src='IMIB_color_gris.svg',width='40%',
+                        style="padding: 10px; float: right;") ),
+        
+        style = "position: relative; bottom:0; width:20%; margin-left: auto; margin-right: auto;"
+      ) #fin div
   ) # fin dashboardbody
 ) # fin dashboarpage
 
@@ -342,7 +353,8 @@ server <- function(input, output) {
                   Value = "value", NodeID = "name", 
                   sinksRight=TRUE, fontSize = 14, margin=0)
 
-  })
+  } )
+
 }
 
 # Run server in a standard way.

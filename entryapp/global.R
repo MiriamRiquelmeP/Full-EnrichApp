@@ -127,20 +127,15 @@ mapData <- function(){
     require(tmap)
     require(tidyverse)
     data("World")
-    js <- read_json("www/report_stats.json")
-    df <- list()
-    k=1
-    for(i in seq(1,length(js$geolocation$data))){
-        for(j in seq(1, length(js$geolocation$data[[i]]$items))){
-            df$count[k] <- js$geolocation$data[[i]]$items[[j]]$visitors$count
-            df$country[k] <- js$geolocation$data[[i]]$items[[j]]$data
-            k=k+1
-        }
-    }
-    df <- as.data.frame.list(df)
+    js <- jsonlite::fromJSON("www/report_stats.json")
+    kk <- js$geolocation$data
+    df <- rbind_pages(kk$items) %>% as.matrix() %>% as.data.frame()
+    df <- df %>% select(visitors.count, data)
+    names(df) <- c("count","country")
     df$country <- sub(" ",";", df$country)
     df <- df %>% tidyr::separate(country, c("countryId", "country"), sep=";")
     world2 <- left_join(World, df, by = c("name" = "country") )
+    world2 <- world2 %>%  mutate(count = as.numeric(as.character(count)) )
     return(world2)
 }
 
