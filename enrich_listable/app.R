@@ -128,7 +128,9 @@ body <- dashboardBody(
                   uiOutput(outputId = "geneList"), 
                   uiOutput(outputId = "geneFile"),
                   uiOutput(outputId = "geneButton")
-                  )
+                  ),
+              box(width=12,
+                  dataTableOutput(outputId = "table1col"))
               ),
             column(width = 8,
             box(width=12,
@@ -160,12 +162,9 @@ body <- dashboardBody(
             p("This app can be found on ",
               a("GitHub.", 
                 href = "https://github.com/"))),
+            uiOutput("enrichbutton")
             )
-            ), 
-            br(),
-        fluidRow(column(width = 6, offset = 3,
-                    uiOutput("enrichbutton")
-                    ))
+            )
     ),
     # preview tab
     tabItem(tabName = "preview",
@@ -229,7 +228,8 @@ server <- function(input, output, session) {
     showModal(
       modalDialog(
         size="l",
-        tags$iframe(src="https://155.54.120.105/shiny/enrich_listable/pres1.html",  width="850px", height="700px")
+        #tags$iframe(src="https://155.54.120.105/shiny/enrich_listable/pres1.html",  width="850px", height="700px")
+        tags$iframe(src="pres1.html",  width="850px", height="700px")
       )
     )
   })
@@ -333,10 +333,13 @@ server <- function(input, output, session) {
   ## Pulsar Enrich Button ################################################
   observeEvent(input$enrichButtons,{
     if( dim(data$df)[2]==3 ){
-      kgg$all <- customKegg(data$df[,c("SYMBOL","ENTREZID") ], species = specie() )
-      kggDT$all <- kegg2DT(kgg$all, data$df[,c("SYMBOL","ENTREZID") ] )
-      go$all <- customGO(data$df[,c("SYMBOL","ENTREZID") ], species = "Mm")
-      goDT$all <- go2DT(enrichdf = go$all, data = data$df[,c("SYMBOL","ENTREZID") ] )
+      lost <- which(is.na(data$df$ENTREZID))
+      gene$lost <- data$df$SYMBOL[lost]
+      if(length(lost)!=0){ datadf <- data$df[-lost, ] }else{datadf <- data$df}
+      kgg$all <- customKegg(datadf[,c("SYMBOL","ENTREZID") ], species = specie() )
+      kggDT$all <- kegg2DT(kgg$all, datadf[,c("SYMBOL","ENTREZID") ] )
+      go$all <- customGO(datadf[,c("SYMBOL","ENTREZID") ], species = "Mm")
+      goDT$all <- go2DT(enrichdf = go$all, data = datadf[,c("SYMBOL","ENTREZID") ] )
       enrichflag$one <- TRUE
       hideTab(inputId = "keggTabSetPanel", target = "keggDownTab")
       hideTab(inputId = "keggTabSetPanel", target = "keggUpTab")
@@ -350,14 +353,15 @@ server <- function(input, output, session) {
       hideTab(inputId = "boxPanelCC", target = "gocirplotallcc")
     }  
     })
+  
   observeEvent(input$enrichButton,{
     if( dim(data$df)[2]==5 ){
       lost <- which(is.na(data$df$ENTREZID))
       gene$lost <- data$df$SYMBOL[lost]
       if(length(lost)!=0){ datadf <- data$df[-lost, ] }else{datadf <- data$df}
-      genes$Up <- data$df[data$df$logFC >= logfc()[2] & data$df$pval <= padj(),
+      genes$Up <- datadf[datadf$logFC >= logfc()[2] & datadf$pval <= padj(),
                           c("SYMBOL","ENTREZID")]
-      genes$Down <- data$df[data$df$logFC <= logfc()[1] & data$df$pval <= padj(),
+      genes$Down <- datadf[datadf$logFC <= logfc()[1] & datadf$pval <= padj(),
                           c("SYMBOL","ENTREZID")]
       genes$all <- rbind(genes$Up, genes$Down)
       kgg$all <- customKegg(genes$all, species = specie() ) #"Mm"), species.KEGG = "mmu")
@@ -372,12 +376,32 @@ server <- function(input, output, session) {
       goDT$up <- go2DT(enrichdf = go$up, data = genes$Up )
       go$down <- customGO(genes$Down, species = "Mm")
       goDT$down <- go2DT(enrichdf = go$down, data = genes$Down )
-      gsea$gsea <- gseaKegg(data$df[, c("ENTREZID","logFC")], specie() )
+      gsea$gsea <- gseaKegg(datadf[, c("ENTREZID","logFC")], specie() )
       enrichflag$three <- TRUE
     }
   })
-  
-  ## Cosas a renderizar en preview si dflist 3 columns ##################
+## ........................ #####################
+##datatable preview 1 columna #####################
+  output$table1col <- renderDataTable({
+  validate(need(data$df, ""))
+    validate(need( dim(data$df)[2]==3,"")) 
+  customButtons <- list(
+        list(extend = "copy", title="Preview table"),
+        list(extend="collection", buttons = c("csv", "excel"),
+             text="Download", filename="coldata", title="Preview table" ) )
+    
+  datatable( data$df, extensions = "Buttons",
+               rownames=FALSE,
+               filter = list(position="top", clear=FALSE),
+               options = list(
+                 dom = "Bfrtipl",
+                 lengthMenu = list(c(10,25,50,100,-1), c(10,25,50,100,"All")),
+                 buttons = customButtons,
+                 list(pageLength = 10, white_space = "normal")
+               )
+    )
+  })
+## Cosas a renderizar en preview si dflist 3 columns ##################
   ## sidebar menu preview ###################
   output$prevw <- renderMenu({
       validate(need(isTRUE(df3cols$TF), ""))
