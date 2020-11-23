@@ -9,7 +9,7 @@ output:
     
 params:
   values: NA
-  datadf: NA
+  datadfilt: NA
   specie: NA
   padj: NA
   logfc: NA
@@ -279,8 +279,8 @@ cat("## Netplot kegg All genes")
 ```
 
 ```{r netkgaplot, eval = params$netkgaObj}
-#customCnetKeggReport(params$kggall, params$nrowsall, genesUp = params$datadf, genesDown = NULL)
-customCnetKegg(params$kggall, params$nrowsall, genesUp = params$datadf, genesDown = NULL)
+#customCnetKeggReport(params$kggall, params$nrowsall, genesUp = params$datadfilt, genesDown = NULL)
+customCnetKegg(params$kggall, params$nrowsall, genesUp = params$datadfilt, genesDown = NULL)
 ```
 
 

@@ -2394,18 +2394,26 @@ customkaryploterReport <- function(genome = "mm10", plot.type = 1, ideogram.plot
   
   
 krtpReport <- function(res, specie="Mm", pval, fcdown, 
-                 fcup, bg="white", coldown="#1f31ff", colup="#DC143C"){
+                 fcup, bg="white", coldown="#1f31ff", colup="#DC143C", annotation){
   require(karyoploteR)
   fileAnnot <- paste0("./resources/",specie,"/cytoband/",specie,"_annot.txt")
   annot <- read.table(fileAnnot, header = F, sep = "\t")
   res2 <- res[ res$pval <pval & (res$logFC<(fcdown) | res$logFC>fcup),]
   res3 <- as.data.frame(res2)
-  res3$genes <- res3$ENSEMBL
-  genes <- left_join(annot, res3, by = c("V1"="genes"))
+  if(annotation=="ensg"){
+    res3$genes <- res3$ENSEMBL
+    genes <- left_join(annot, res3, by = c("V1"="genes"))
+    }
+  if(annotation=="symbol"){
+    res3$genes <- res3$SYMBOL
+    genes <- left_join(annot, res3, by = c("V2"="genes"))
+  }
   sig <- which( !is.na(genes$pval) )
   genes <- genes[sig,]
-  A <- data.frame(chr = paste0("chr",genes$V2), start = genes$V3,
-                  end=genes$V4, x = genes$V1, y = genes$logFC)
+  if(annotation =="ensg"){genesv1 <- genes$V1}
+  if(annotation =="symbol"){genesv1 <- genes$V2}
+  A <- data.frame(chr = paste0("chr",genes$V3), start = genes$V4,
+                  end=genes$V5, x = genesv1, y = genes$logFC)
   genesSig <- toGRanges(A)
   one <- getDefaultPlotParams(2)
   one$ideogramheight <- 300

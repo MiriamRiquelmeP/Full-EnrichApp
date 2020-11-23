@@ -81,6 +81,9 @@ sidebar <- dashboardSidebar(useShinyalert(),
                                 sidebarMenu("", sidebarMenuOutput("menuGSEA"))
                             ),
                             tags$div(
+                              column(12, align="center",
+                                actionBttn(inputId = "resetbutton",label = "Reset App",style="simple",
+                                           color ="danger")),
                               box(width = 12,
                               
                                 h5(strong("Generate report"), align = 'center'),
@@ -222,7 +225,9 @@ server <- function(input, output, session) {
                  imageUrl = "dna-svg-small-13.gif",
                  imageWidth = 200, imageHeight = 100, html=TRUE)})
   
-    
+    observeEvent(input$resetbutton,{
+      session$reload()
+    })
     
   observeEvent(input$morinfo1,{
     showModal(
@@ -236,7 +241,7 @@ server <- function(input, output, session) {
   
   # variables reactivas ######
   annotation <- reactive({input$annotation})
-  data <- reactiveValues(df=NULL)
+  data <- reactiveValues(df=NULL, dfilt=NULL)
   df3cols <- reactiveValues(TF=FALSE)
   enrichflag <- reactiveValues(one=NULL, three=NULL)
   fc_switch <- reactive({input$fc_switch})
@@ -335,11 +340,11 @@ server <- function(input, output, session) {
     if( dim(data$df)[2]==3 ){
       lost <- which(is.na(data$df$ENTREZID))
       gene$lost <- data$df$SYMBOL[lost]
-      if(length(lost)!=0){ datadf <- data$df[-lost, ] }else{datadf <- data$df}
-      kgg$all <- customKegg(datadf[,c("SYMBOL","ENTREZID") ], species = specie() )
-      kggDT$all <- kegg2DT(kgg$all, datadf[,c("SYMBOL","ENTREZID") ] )
-      go$all <- customGO(datadf[,c("SYMBOL","ENTREZID") ], species = "Mm")
-      goDT$all <- go2DT(enrichdf = go$all, data = datadf[,c("SYMBOL","ENTREZID") ] )
+      if(length(lost)!=0){ data$dfilt <- data$df[-lost, ] }else{data$dfilt <- data$df}
+      kgg$all <- customKegg(data$dfilt[,c("SYMBOL","ENTREZID") ], species = specie() )
+      kggDT$all <- kegg2DT(kgg$all, data$dfilt[,c("SYMBOL","ENTREZID") ] )
+      go$all <- customGO(data$dfilt[,c("SYMBOL","ENTREZID") ], species = "Mm")
+      goDT$all <- go2DT(enrichdf = go$all, data = data$dfilt[,c("SYMBOL","ENTREZID") ] )
       enrichflag$one <- TRUE
       hideTab(inputId = "keggTabSetPanel", target = "keggDownTab")
       hideTab(inputId = "keggTabSetPanel", target = "keggUpTab")
@@ -358,10 +363,10 @@ server <- function(input, output, session) {
     if( dim(data$df)[2]==5 ){
       lost <- which(is.na(data$df$ENTREZID))
       gene$lost <- data$df$SYMBOL[lost]
-      if(length(lost)!=0){ datadf <- data$df[-lost, ] }else{datadf <- data$df}
-      genes$Up <- datadf[datadf$logFC >= logfc()[2] & datadf$pval <= padj(),
+      if(length(lost)!=0){ data$dfilt <- data$df[-lost, ] }else{data$dfilt <- data$df}
+      genes$Up <- data$dfilt[data$dfilt$logFC >= logfc()[2] & data$dfilt$pval <= padj(),
                           c("SYMBOL","ENTREZID")]
-      genes$Down <- datadf[datadf$logFC <= logfc()[1] & datadf$pval <= padj(),
+      genes$Down <- data$dfilt[data$dfilt$logFC <= logfc()[1] & data$dfilt$pval <= padj(),
                           c("SYMBOL","ENTREZID")]
       genes$all <- rbind(genes$Up, genes$Down)
       kgg$all <- customKegg(genes$all, species = specie() ) #"Mm"), species.KEGG = "mmu")
@@ -376,7 +381,7 @@ server <- function(input, output, session) {
       goDT$up <- go2DT(enrichdf = go$up, data = genes$Up )
       go$down <- customGO(genes$Down, species = "Mm")
       goDT$down <- go2DT(enrichdf = go$down, data = genes$Down )
-      gsea$gsea <- gseaKegg(datadf[, c("ENTREZID","logFC")], specie() )
+      gsea$gsea <- gseaKegg(data$dfilt[, c("ENTREZID","logFC")], specie() )
       enrichflag$three <- TRUE
     }
   })
@@ -821,7 +826,7 @@ output$karyoPlot <- renderPlot({
   output$cnetAllKegg <- renderPlot({
     validate(need(kgg$all, "Load file and select to render Net Plot"))
     validate(need(rowsAll(), "Select the paths of interest to render NetPlot"))
-    customCnetKegg(kgg$all, rowsAll(), genesUp = datadf, genesDown = NULL)
+    customCnetKegg(kgg$all, rowsAll(), genesUp = data$dfilt, genesDown = NULL)
   })
   output$visnetKeggAll <- renderVisNetwork({
     validate(need(kgg$all, "Load file and select to render Net Plot"))
@@ -920,7 +925,7 @@ output$karyoPlot <- renderPlot({
   output$cnetKeggUp <- renderPlot({
     validate(need(kgg$up, "Load file and select to render Net Plot"))
     validate(need(rowsUp(), "Select the paths of interest to render NetPlot"))
-    customCnetKegg(kgg$up, rowsUp(), genesUp = datadf, genesDown = NULL)
+    customCnetKegg(kgg$up, rowsUp(), genesUp = data$dfilt, genesDown = NULL)
   })
   output$visnetKeggUp <- renderVisNetwork({
     validate(need(kgg$up, "Load file and select to render Net Plot"))
@@ -1018,7 +1023,7 @@ output$karyoPlot <- renderPlot({
   output$cnetKeggDown <- renderPlot({
     validate(need(kgg$down, "Load file and select to render Net Plot"))
     validate(need(rowsDown(), "Select the paths of interest to render NetPlot"))
-    customCnetKegg(kgg$down, rowsDown(), genesDown = datadf, genesUp = NULL)
+    customCnetKegg(kgg$down, rowsDown(), genesDown = data$dfilt, genesUp = NULL)
   })
   output$visnetKeggDown <- renderVisNetwork({
     validate(need(kgg$down, "Load file and select to render Net Plot"))
@@ -1102,17 +1107,17 @@ output$karyoPlot <- renderPlot({
   output$gobarplotAllBP <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
     bprowsall <- bprowsall()
-    goBarplot(enrichGO = go$all, resGO = datadf, genes= genes$all,
+    goBarplot(enrichGO = go$all, resGO = data$dfilt, genes= genes$all,
               category = "BP", nrows = bprowsall)
   })
   # GO circle BP all #####################
   output$goCircleAllBP <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
-    validate(need(datadf,""))
+    validate(need(data$dfilt,""))
     validate(need( bprowsall() , "Select at least 4 rows"))
     bprowsall <- bprowsall()
     if(length(bprowsall)>=4){
-      circ <- data2circle(go=go$all[bprowsall, ], res=datadf, genes=genes$all)
+      circ <- data2circle(go=go$all[bprowsall, ], res=data$dfilt, genes=genes$all)
       circle(circ, label.size = 3, nsub = length(bprowsall), table.legend = FALSE)
     }
   })
@@ -1173,17 +1178,17 @@ output$karyoPlot <- renderPlot({
   output$gobarplotAllMF <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
     mfrowsall <- mfrowsall()
-    goBarplot(enrichGO = go$all, resGO = datadf, genes= genes$all,
+    goBarplot(enrichGO = go$all, resGO = data$dfilt, genes= genes$all,
               category = "MF", nrows = mfrowsall)
   })
   # GO circle MF all #####################
   output$goCircleAllMF <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
-    validate(need(datadf,""))
+    validate(need(data$dfilt,""))
     validate(need( mfrowsall() , "Select at least 4 rows"))
     mfrowsall <- mfrowsall()
     if(length(mfrowsall)>=4){
-      circ <- data2circle(go=go$all[mfrowsall, ], res=datadf, genes=genes$all)
+      circ <- data2circle(go=go$all[mfrowsall, ], res=data$dfilt, genes=genes$all)
       circle(circ, label.size = 3, nsub = length(mfrowsall), table.legend = FALSE)
     }
   })
@@ -1244,17 +1249,17 @@ output$karyoPlot <- renderPlot({
   output$gobarplotAllCC <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
     ccrowsall <- ccrowsall()
-    goBarplot(enrichGO = go$all, resGO = datadf, genes= genes$all,
+    goBarplot(enrichGO = go$all, resGO = data$dfilt, genes= genes$all,
               category = "CC", nrows = ccrowsall)
   })
   # GO circle CC all #####################
   output$goCircleAllCC <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
-    validate(need(datadf,""))
+    validate(need(data$dfilt,""))
     validate(need( ccrowsall() , "Select at least 4 rows"))
     ccrowsall <- ccrowsall()
     if(length(ccrowsall)>=4){
-      circ <- data2circle(go=go$all[ccrowsall, ], res=datadf, genes=genes$all)
+      circ <- data2circle(go=go$all[ccrowsall, ], res=data$dfilt, genes=genes$all)
       circle(circ, label.size = 3, nsub = length(ccrowsall), table.legend = FALSE)
     }
   })
@@ -1303,17 +1308,17 @@ output$karyoPlot <- renderPlot({
   output$gobarplotUpBP <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
     bprowsup <- bprowsup()
-    goBarplot(enrichGO = go$up, resGO = datadf, genes= genes$Up,
+    goBarplot(enrichGO = go$up, resGO = data$dfilt, genes= genes$Up,
               category = "BP", nrows = bprowsup)
   })
     # GO circle BP Up #####################
   output$goCircleUpBP <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
-    validate(need(datadf,""))
+    validate(need(data$dfilt,""))
     validate(need( bprowsup() , "Select at least 4 rows"))
     bprowsup <- bprowsup()
     if(length(bprowsup)>=4){
-      circ <- data2circle(go=go$up[bprowsup, ], res=datadf, genes=genes$Up)
+      circ <- data2circle(go=go$up[bprowsup, ], res=data$dfilt, genes=genes$Up)
       circle(circ, label.size = 3, nsub = length(bprowsup), table.legend = FALSE)
     }
   })
@@ -1364,17 +1369,17 @@ output$karyoPlot <- renderPlot({
   output$gobarplotUpMF <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
     mfrowsup <- mfrowsup()
-    goBarplot(enrichGO = go$up, resGO = datadf, genes= genes$Up,
+    goBarplot(enrichGO = go$up, resGO = data$dfilt, genes= genes$Up,
               category = "MF", nrows = mfrowsup)
   })
   # GO circle MF Up #####################
   output$goCircleUpMF <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
-    validate(need(datadf,""))
+    validate(need(data$dfilt,""))
     validate(need( mfrowsup() , "Select at least 4 rows"))
     mfrowsup <- mfrowsup()
     if(length(mfrowsup)>=4){
-      circ <- data2circle(go=go$up[mfrowsup, ], res=datadf, genes=genes$Up)
+      circ <- data2circle(go=go$up[mfrowsup, ], res=data$dfilt, genes=genes$Up)
       circle(circ, label.size = 3, nsub = length(mfrowsup), table.legend = FALSE)
     }
   })
@@ -1425,17 +1430,17 @@ output$karyoPlot <- renderPlot({
   output$gobarplotUpCC <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
     ccrowsup <- ccrowsup()
-    goBarplot(enrichGO = go$up, resGO = datadf, genes= genes$Up,
+    goBarplot(enrichGO = go$up, resGO = data$dfilt, genes= genes$Up,
               category = "CC", nrows = ccrowsup)
   })
   # GO circle CC Up #####################
   output$goCircleUpCC <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
-    validate(need(datadf,""))
+    validate(need(data$dfilt,""))
     validate(need( ccrowsup() , "Select at least 4 rows"))
     ccrowsup <- ccrowsup()
     if(length(ccrowsup)>=4){
-      circ <- data2circle(go=go$up[ccrowsup, ], res=datadf, genes=genes$Up)
+      circ <- data2circle(go=go$up[ccrowsup, ], res=data$dfilt, genes=genes$Up)
       circle(circ, label.size = 3, nsub = length(ccrowsup), table.legend = FALSE)
     }
   })
@@ -1485,17 +1490,17 @@ output$karyoPlot <- renderPlot({
   output$gobarplotDownBP <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
     bprowsdown <- bprowsdown()
-    goBarplot(enrichGO = go$down, resGO = datadf, genes= genes$Down,
+    goBarplot(enrichGO = go$down, resGO = data$dfilt, genes= genes$Down,
               category = "BP", nrows = bprowsdown)
   })
   # GO circle BP Down #####################
   output$goCircleDownBP <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
-    validate(need(datadf,""))
+    validate(need(data$dfilt,""))
     validate(need( bprowsdown() , "Select at least 4 rows"))
     bprowsdown <- bprowsdown()
     if(length(bprowsdown)>=4){
-      circ <- data2circle(go=go$down[bprowsdown, ], res=datadf, genes=genes$Down)
+      circ <- data2circle(go=go$down[bprowsdown, ], res=data$dfilt, genes=genes$Down)
       circle(circ, label.size = 3, nsub = length(bprowsdown), table.legend = FALSE)
     }
   })
@@ -1546,17 +1551,17 @@ output$karyoPlot <- renderPlot({
   output$gobarplotDownMF <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
     mfrowsdown <- mfrowsdown()
-    goBarplot(enrichGO = go$down, resGO = datadf, genes= genes$Down,
+    goBarplot(enrichGO = go$down, resGO = data$dfilt, genes= genes$Down,
               category = "MF", nrows = mfrowsdown)
   })
   # GO circle MF Down #####################
   output$goCircleDownMF <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
-    validate(need(datadf,""))
+    validate(need(data$dfilt,""))
     validate(need( mfrowsdown() , "Select at least 4 rows"))
     mfrowsdown <- mfrowsdown()
     if(length(mfrowsdown)>=4){
-      circ <- data2circle(go=go$down[mfrowsdown, ], res=datadf, genes=genes$Down)
+      circ <- data2circle(go=go$down[mfrowsdown, ], res=data$dfilt, genes=genes$Down)
       circle(circ, label.size = 3, nsub = length(mfrowsdown), table.legend = FALSE)
     }
   })
@@ -1607,17 +1612,17 @@ output$karyoPlot <- renderPlot({
   output$gobarplotDownCC <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
     ccrowsdown <- ccrowsdown()
-    goBarplot(enrichGO = go$down, resGO = datadf, genes= genes$Down,
+    goBarplot(enrichGO = go$down, resGO = data$dfilt, genes= genes$Down,
               category = "CC", nrows = ccrowsdown)
   })
   # GO circle CC Down #####################
   output$goCircleDownCC <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
-    validate(need(datadf,""))
+    validate(need(data$dfilt,""))
     validate(need( ccrowsdown() , "Select at least 4 rows"))
     ccrowsdown <- ccrowsdown()
     if(length(ccrowsdown)>=4){
-      circ <- data2circle(go=go$down[ccrowsdown, ], res=datadf, genes=genes$Down)
+      circ <- data2circle(go=go$down[ccrowsdown, ], res=data$dfilt, genes=genes$Down)
       circle(circ, label.size = 3, nsub = length(ccrowsdown), table.legend = FALSE)
     }
   })
@@ -1822,7 +1827,7 @@ output$karyoPlot <- renderPlot({
         if("GSEA plot" %in% vals$GSEA){ plotgseaObj <- TRUE}
         }
 
-      params <- list( values = vals, datadf = data$df,
+      params <- list( values = vals, datadf = data$df, datadfilt = data$dfilt, annotation=annotation(),
                      specie = specie(), padj =padj(), logfc = logfc(),
                      volcObj = volcObj, genesvolcano = genesVolcano(), 
                      upcolor = input$upColor, downcolor = input$downColor, 

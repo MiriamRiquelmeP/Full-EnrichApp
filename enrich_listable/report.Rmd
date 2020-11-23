@@ -10,6 +10,8 @@ output:
 params:
   values: NA
   datadf: NA
+  datadfilt: NA
+  annotation: NA
   specie: NA
   padj: NA
   logfc: NA
@@ -233,7 +235,7 @@ cat("## Karyoplot")
 
 ```{r karyoplot, eval=params$karyObj}
     krtpReport(params$datadf, specie = params$specie, pval = params$padj, fcdown = params$logfc[1],
-         fcup = params$logfc[2], bg="#edf0f2", coldown="#1f31ff" , colup="#f7665c")
+         fcup = params$logfc[2], bg="#edf0f2", coldown="#1f31ff" , colup="#f7665c", params$annotation)
 ```
 
 <!-- kegg all section -->
@@ -315,7 +317,7 @@ cat("## Heatmap kegg All genes")
 ```
 
 ```{r heatkgaplot, eval = params$heatkgaObj}
-heatmapKeggLogFCReport(params$kggdtall, params$datadf, params$nrowsall ) 
+heatmapKeggLogFCReport(params$kggdtall, params$datadfilt, params$nrowsall ) 
 ```
 
 ```{r netkga, eval = params$netkgaObj, results='asis' }
@@ -399,7 +401,7 @@ cat("## Heatmap kegg Up genes")
 ```
 
 ```{r heatkguplot, eval = params$heatkguObj}
-heatmapKeggLogFCReport(params$kggdtup, params$datadf, params$nrowsup ) 
+heatmapKeggLogFCReport(params$kggdtup, params$datadfilt, params$nrowsup ) 
 ```
 
 ```{r netkgu, eval = params$netkguObj, results='asis' }
@@ -485,7 +487,7 @@ cat("## Heatmap kegg Down genes")
 
 
 ```{r heatkgdownlot, eval = params$heatkgdObj}
-heatmapKeggLogFCReport(params$kggdtdown, params$datadf, params$nrowsdown ) 
+heatmapKeggLogFCReport(params$kggdtdown, params$datadfilt, params$nrowsdown ) 
 ```
 
 ```{r netkgd, eval = params$netkgdObj, results='asis' }
@@ -576,7 +578,7 @@ bprowsall <- params$bprowsall
  if(is.null(bprowsall)){ 
              bprowsall <-  ( if( dim(params$godtall)[1]<30) seq_len(nrow(params$godtall)) else seq_len(30) ) }
 datagenesall <- rbind(params$datagenesup, params$datagenesdown)
-    goBarplotReport(enrichGO = params$goall, resGO = params$datadf, genes= datagenesall,
+    goBarplotReport(enrichGO = params$goall, resGO = params$datadfilt, genes= datagenesall,
               category = "BP", nrows = bprowsall)
 ```
 
@@ -592,7 +594,7 @@ bprowsall <- params$bprowsall
 datagenesall <- rbind(params$datagenesup, params$datagenesdown)
     goall <- params$goall[params$goall$Ont=="BP", ]
     if(length(bprowsall)>=4){
-      circ <- data2circleReport(go=goall[bprowsall, ], res=params$datadf, genes=datagenesall)
+      circ <- data2circleReport(go=goall[bprowsall, ], res=params$datadfilt, genes=datagenesall)
     c <-  circleReport(circ, label.size = 3, nsub = length(bprowsall), table.legend = FALSE)
     c
     }
@@ -674,7 +676,7 @@ mfrowsall <- params$mfrowsall
  if(is.null(mfrowsall)){ 
              mfrowsall <-  ( if( dim(params$godtall)[1]<30) seq_len(nrow(params$godtall)) else seq_len(30) ) }
 datagenesall <- rbind(params$datagenesup, params$datagenesdown)
-    goBarplotReport(enrichGO = params$goall, resGO = params$datadf, genes= datagenesall,
+    goBarplotReport(enrichGO = params$goall, resGO = params$datadfilt, genes= datagenesall,
               category = "MF", nrows = mfrowsall)
 ```
 
@@ -689,7 +691,7 @@ mfrowsall <- params$mfrowsall
 datagenesall <- rbind(params$datagenesup, params$datagenesdown)
     goall <- params$goall[params$goall$Ont=="MF", ]
     if(length(mfrowsall)>=4){
-      circ <- data2circleReport(go=goall[mfrowsall, ], res=params$datadf, genes=datagenesall)
+      circ <- data2circleReport(go=goall[mfrowsall, ], res=params$datadfilt, genes=datagenesall)
     c <-  circleReport(circ, label.size = 3, nsub = length(mfrowsall), table.legend = FALSE)
     c
     }
@@ -772,7 +774,7 @@ ccrowsall <- params$ccrowsall
  if(is.null(ccrowsall)){ 
              ccrowsall <-  ( if( dim(params$godtall)[1]<30) seq_len(nrow(params$godtall)) else seq_len(30) ) }
 datagenesall <- rbind(params$datagenesup, params$datagenesdown)
-    goBarplotReport(enrichGO = params$goall, resGO = params$datadf, genes= datagenesall,
+    goBarplotReport(enrichGO = params$goall, resGO = params$datadfilt, genes= datagenesall,
               category = "CC", nrows = ccrowsall)
 ```
 
@@ -787,7 +789,7 @@ ccrowsall <- params$ccrowsall
 datagenesall <- rbind(params$datagenesup, params$datagenesdown)
     goall <- params$goall[params$goall$Ont=="CC", ]
     if(length(ccrowsall)>=4){
-      circ <- data2circleReport(go=goall[ccrowsall, ], res=params$datadf, genes=datagenesall)
+      circ <- data2circleReport(go=goall[ccrowsall, ], res=params$datadfilt, genes=datagenesall)
     c <-  circleReport(circ, label.size = 3, nsub = length(ccrowsall), table.legend = FALSE)
     c
     }
@@ -865,7 +867,7 @@ cat("## GObarplot GO BP up")
 bprowsup <- params$bprowsup
     if(is.null(bprowsup)){ 
              bprowsup <-  ( if( dim(params$godtup)[1]<30) seq_len(nrow(params$godtup)) else seq_len(30) ) }
-    goBarplotReport(enrichGO = params$goup, resGO = params$datadf, genes= params$datagenesup,
+    goBarplotReport(enrichGO = params$goup, resGO = params$datadfilt, genes= params$datagenesup,
               category = "BP", nrows = bprowsup)
 ```
 
@@ -878,7 +880,7 @@ cat("## Circle plot GO BP up")
     if(is.null(bprowsup)){ 
              bprowsup <-  ( if( dim(params$godtup)[1]<6) seq_len(nrow(params$godtup)) else seq_len(6) ) }
     if(length(bprowsup)>=4){
-      circ <- data2circleReport(go=params$goup[bprowsup, ], res=params$datadf, genes=params$datagenesup)
+      circ <- data2circleReport(go=params$goup[bprowsup, ], res=params$datadfilt, genes=params$datagenesup)
       circleReport(circ, label.size = 3, nsub = length(bprowsup), table.legend = FALSE)
     }
 ```
@@ -952,7 +954,7 @@ cat("## GObarplot GO MF up")
 mfrowsup <- params$mfrowsup
     if(is.null(mfrowsup)){ 
              mfrowsup <-  ( if( dim(params$godtup)[1]<30) seq_len(nrow(params$godtup)) else seq_len(30) ) }
-    goBarplotReport(enrichGO = params$goup, resGO = params$datadf, genes= params$datagenesup,
+    goBarplotReport(enrichGO = params$goup, resGO = params$datadfilt, genes= params$datagenesup,
               category = "MF", nrows = mfrowsup)
 ```
 
@@ -965,7 +967,7 @@ cat("## Circle plot GO MF up")
     if(is.null(mfrowsup)){ 
              mfrowsup <-  ( if( dim(params$godtup)[1]<6) seq_len(nrow(params$godtup)) else seq_len(6) ) }
     if(length(mfrowsup)>=4){
-      circ <- data2circleReport(go=params$goup[mfrowsup, ], res=params$datadf, genes=params$datagenesup)
+      circ <- data2circleReport(go=params$goup[mfrowsup, ], res=params$datadfilt, genes=params$datagenesup)
       circleReport(circ, label.size = 3, nsub = length(mfrowsup), table.legend = FALSE)
     }
 ```
@@ -1038,7 +1040,7 @@ cat("## GObarplot GO CC up")
 ccrowsup <- params$ccrowsup
     if(is.null(ccrowsup)){ 
              ccrowsup <-  ( if( dim(params$godtup)[1]<30) seq_len(nrow(params$godtup)) else seq_len(30) ) }
-    goBarplotReport(enrichGO = params$goup, resGO = params$datadf, genes= params$datagenesup,
+    goBarplotReport(enrichGO = params$goup, resGO = params$datadfilt, genes= params$datagenesup,
               category = "CC", nrows = ccrowsup)
 ```
 
@@ -1051,7 +1053,7 @@ cat("## Circle plot GO CC up")
     if(is.null(ccrowsup)){ 
              ccrowsup <-  ( if( dim(params$godtup)[1]<6) seq_len(nrow(params$godtup)) else seq_len(6) ) }
     if(length(ccrowsup)>=4){
-      circ <- data2circleReport(go=params$goup[ccrowsup, ], res=params$datadf, genes=params$datagenesup)
+      circ <- data2circleReport(go=params$goup[ccrowsup, ], res=params$datadfilt, genes=params$datagenesup)
       circleReport(circ, label.size = 3, nsub = length(ccrowsup), table.legend = FALSE)
     }
 ```
@@ -1130,7 +1132,7 @@ cat("## GObarplot GO BP down")
 bprowsdown <- params$bprowsdown
     if(is.null(bprowsdown)){ 
              bprowsdown <-  ( if( dim(params$godtdown)[1]<30) seq_len(nrow(params$godtdown)) else seq_len(30) ) }
-    goBarplotReport(enrichGO = params$godown, resGO = params$datadf, genes= params$datagenesdown,
+    goBarplotReport(enrichGO = params$godown, resGO = params$datadfilt, genes= params$datagenesdown,
               category = "BP", nrows = bprowsdown)
 ```
 
@@ -1143,7 +1145,7 @@ cat("## Circle plot GO BP down")
     if(is.null(bprowsdown)){ 
              bprowsdown <-  ( if( dim(params$godtdown)[1]<6) seq_len(nrow(params$godtdown)) else seq_len(6) ) }
     if(length(bprowsdown)>=4){
-      circ <- data2circleReport(go=params$godown[bprowsdown, ], res=params$datadf, genes=params$datagenesdown)
+      circ <- data2circleReport(go=params$godown[bprowsdown, ], res=params$datadfilt, genes=params$datagenesdown)
       circleReport(circ, label.size = 3, nsub = length(bprowsdown), table.legend = FALSE)
     }
 ```
@@ -1217,7 +1219,7 @@ cat("## GObarplot GO MF down")
 mfrowsdown <- params$mfrowsdown
     if(is.null(mfrowsdown)){ 
              mfrowsdown <-  ( if( dim(params$godtdown)[1]<30) seq_len(nrow(params$godtdown)) else seq_len(30) ) }
-    goBarplotReport(enrichGO = params$godown, resGO = params$datadf, genes= params$datagenesdown,
+    goBarplotReport(enrichGO = params$godown, resGO = params$datadfilt, genes= params$datagenesdown,
               category = "MF", nrows = mfrowsdown)
 ```
 
@@ -1230,7 +1232,7 @@ cat("## Circle plot GO MF down")
     if(is.null(mfrowsdown)){ 
              mfrowsdown <-  ( if( dim(params$godtdown)[1]<6) seq_len(nrow(params$godtdown)) else seq_len(6) ) }
     if(length(mfrowsdown)>=4){
-      circ <- data2circleReport(go=params$godown[mfrowsdown, ], res=params$datadf, genes=params$datagenesdown)
+      circ <- data2circleReport(go=params$godown[mfrowsdown, ], res=params$datadfilt, genes=params$datagenesdown)
       circleReport(circ, label.size = 3, nsub = length(mfrowsdown), table.legend = FALSE)
     }
 ```
@@ -1303,7 +1305,7 @@ cat("## GObarplot GO CC down")
 ccrowsdown <- params$ccrowsdown
     if(is.null(ccrowsdown)){ 
              ccrowsdown <-  ( if( dim(params$godtdown)[1]<30) seq_len(nrow(params$godtdown)) else seq_len(30) ) }
-    goBarplotReport(enrichGO = params$godown, resGO = params$datadf, genes= params$datagenesdown,
+    goBarplotReport(enrichGO = params$godown, resGO = params$datadfilt, genes= params$datagenesdown,
               category = "CC", nrows = ccrowsdown)
 ```
 
@@ -1316,7 +1318,7 @@ cat("## Circle plot GO CC down")
     if(is.null(ccrowsdown)){ 
              ccrowsdown <-  ( if( dim(params$godtdown)[1]<6) seq_len(nrow(params$godtdown)) else seq_len(6) ) }
     if(length(ccrowsdown)>=4){
-      circ <- data2circleReport(go=params$godown[ccrowsdown, ], res=params$datadf, genes=params$datagenesdown)
+      circ <- data2circleReport(go=params$godown[ccrowsdown, ], res=params$datadfilt, genes=params$datagenesdown)
       circleReport(circ, label.size = 3, nsub = length(ccrowsdown), table.legend = FALSE)
     }
 ```

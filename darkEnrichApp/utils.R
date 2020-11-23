@@ -2800,8 +2800,7 @@ visnetLegend <- function(kggDT = NULL, rows = NULL){
                            choices = c("Table", "GSEA plot"),
                            selected = c("Table", "GSEA plot"),
                            status = "primary",
-                           chec459+8ç
-                           kIcon = list(
+                           checkIcon = list(
                                yes = icon("ok",
                                           lib = "glyphicon"),
                                no = icon("remove",

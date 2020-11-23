@@ -81,6 +81,9 @@ sidebar <- dashboardSidebar(useShinyalert(),
                             tags$br(),
                             sidebarMenu(menuItem(uiOutput("design"))),
                             tags$div(
+                              column(12, align="center",
+                                     actionBttn(inputId = "resetbutton",label = "Reset App",style="simple",
+                                                color ="danger")),
                             box(width = 12,
                             h5(strong("Generate report"), align = 'center'),
                               sidebarMenu( 
@@ -217,7 +220,10 @@ server <- function(input, output, session) {
                imageUrl = "dna-svg-small-13.gif", 
                imageWidth = 200, imageHeight = 100, html=TRUE)})
 
-
+  observeEvent(input$resetbutton,{
+    session$reload()
+  })
+  
 # Definir reactiveVariables globales ##############
   coloresPCA <- reactiveValues(niveles=NULL, numNiveles=NULL)
   countdata <- reactiveValues() # para convertir count matrix y sample data
