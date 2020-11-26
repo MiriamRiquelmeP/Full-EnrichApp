@@ -1190,8 +1190,10 @@ geneIdConverter <- function(genes, specie="Mm"){ # genes = vector of ensembl gen
   entrez1 <- mapIds(orgdb, keys = annot$consensus, column = "ENTREZID", keytype = "SYMBOL")
   entrez2 <- mapIds(orgdb, keys = as.character(annot$ENSEMBL),
                     column = "ENTREZID", keytype = "ENSEMBL")
-  annot$entrez1 <- entrez1
-  annot$entrez2 <- entrez2
+  entrez1 <- ifelse(entrez1=="NULL", NA, entrez1)
+  entrez2 <- ifelse(entrez2=="NULL", NA, entrez2)
+  annot$entrez1 <- as.vector(unlist(entrez1))
+  annot$entrez2 <- as.vector(unlist(entrez2))
   ENTREZID <- ifelse(!is.na(annot$entrez1), annot$entrez1, annot$entrez2)
   annot$ENTREZID <- ENTREZID
   return(annot)

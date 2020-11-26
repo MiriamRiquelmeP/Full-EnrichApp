@@ -45,7 +45,12 @@ header <- dashboardHeader(title = "Gene list enrichment",
                           tags$li(class="dropdown", actionButton("notesButton","Notes"),
                                   style="margin-top:8px; margin-right: 5px"),
                           tags$li(class = "dropdown", actionButton("aboutButton", "About"),
-                                  style="margin-top:8px; margin-right: 5px")
+                                  style="margin-top:8px; margin-right: 15px"),
+                          tags$li(class = "dropdown", actionBttn(inputId = "resetbutton",
+                                                                 label = "Reset App", style="simple", size="sm",
+                                                                 color ="danger"),
+                                  style="margin-top:8px; margin-right: 10px"
+                          )
                           )
 ### SIDEBAR ##########
 sidebar <- dashboardSidebar(useShinyalert(),
@@ -81,17 +86,12 @@ sidebar <- dashboardSidebar(useShinyalert(),
                                 sidebarMenu("", sidebarMenuOutput("menuGSEA"))
                             ),
                             tags$div(
-                              column(12, align="center",
-                                actionBttn(inputId = "resetbutton",label = "Reset App",style="simple",
-                                           color ="danger")),
                               box(width = 12,
-                              
                                 h5(strong("Generate report"), align = 'center'),
                                 sidebarMenu( 
                                   menuItem(
                                     fluidRow(column(12, align = "center", offset=0,
                                                     uiOutput("report")))))
-                                
                             ),
                             tags$a(href='https://jacob.cea.fr/drf/ifrancoisjacob/Pages/Departements/MIRCen/themes/astrocytes-reactifs-biomarqueurs-imagerie-cibles-therapeutiques.aspx', target="_blank",
                                    tags$img(src='mircen.png',width='50%',
@@ -238,6 +238,8 @@ server <- function(input, output, session) {
       )
     )
   })
+  
+  
   
   # variables reactivas ######
   annotation <- reactive({input$annotation})
@@ -676,7 +678,7 @@ server <- function(input, output, session) {
   })
 #....................... ####
 ## table preview ######################################
-output$tablepreview <- renderDataTable({
+output$tablepreview <- DT::renderDT(server=FALSE,{
   validate(need(data$df, ""))
   customButtons <- list(
         list(extend = "copy", title="Preview table"),
@@ -689,12 +691,20 @@ output$tablepreview <- renderDataTable({
                options = list(
                  dom = "Bfrtipl",
                  lengthMenu = list(c(10,25,50,100,-1), c(10,25,50,100,"All")),
+                  columnDefs = list(list(orderable = TRUE,
+                                        className = "details-control",
+                                        targets = 1)),
                  buttons = customButtons,
                  list(pageLength = 10, white_space = "normal")
                )
     )
 })
 
+output$lostgene <- renderText({
+  validate(need(data$df, ""))
+  lost <- length(which(is.na(data$df$ENTREZID)))
+  print(paste0(lost," out of ", dim(data$df)[1]," genes have no ENTREZ Id. Theses genes will be missing in enrichment analysis" ) )
+})
 # ....................... ####
   # volcano plot #########
   output$volcano <- renderPlot( {
@@ -734,7 +744,7 @@ output$karyoPlot <- renderPlot({
   # variables KEGG ALL ##########################
   rowsAll <- reactive({input$tableAll_rows_selected})
  # KEGG table all #####################################
-  output$tableAll <- DT::renderDT(server=TRUE,{
+  output$tableAll <- DT::renderDT(server=FALSE,{
     validate(need(kgg$all, "Load file to render table"))
     names(kggDT$all)[names(kggDT$all) == "DE"] <- "DEG"
     names(kggDT$all)[names(kggDT$all) == "P.DE"] <- "p-value"
@@ -843,7 +853,7 @@ output$karyoPlot <- renderPlot({
   # variables KEGG UP ##########################
   rowsUp <- reactive({input$table_rows_selected})
  # KEGG table up #####################################
-  output$table <- DT::renderDT(server=TRUE,{
+  output$table <- DT::renderDT(server=FALSE,{
     validate(need(kgg$up, "Load file to render table"))
     names(kggDT$up)[names(kggDT$up) == "DE"] <- "DEG"
     names(kggDT$up)[names(kggDT$up) == "P.DE"] <- "p-value"
@@ -941,7 +951,7 @@ output$karyoPlot <- renderPlot({
   # variables KEGG Down ##########################
   rowsDown <- reactive({input$tableDown_rows_selected})
  # KEGG table down #####################################
-  output$tableDown <- DT::renderDT(server=TRUE,{
+  output$tableDown <- DT::renderDT(server=FALSE,{
     validate(need(kgg$down, "Load file to render table"))
     names(kggDT$down)[names(kggDT$down) == "DE"] <- "DEG"
     names(kggDT$down)[names(kggDT$down) == "P.DE"] <- "p-value"
@@ -1055,7 +1065,7 @@ output$karyoPlot <- renderPlot({
   
  # ....................... ####
    # GO table BP ALL #####################
-  output$tableBPall <- DT::renderDataTable(server=TRUE,{
+  output$tableBPall <- DT::renderDataTable(server=FALSE,{
     validate(need(goDT$all, "Load file to render table"))
     goDT <- goDT$all 
     names(goDT)[names(goDT) == "DE"] <- "DEG"
@@ -1123,7 +1133,7 @@ output$karyoPlot <- renderPlot({
   })
   # ...................... #############
   # GO table MF all #####################
-  output$tableMFall <- DT::renderDataTable({
+  output$tableMFall <- DT::renderDataTable(server=FALSE,{
     validate(need(goDT$all, "Load file to render table"))
     goDT <- goDT$all
     names(goDT)[names(goDT) == "DE"] <- "DEG"
@@ -1194,7 +1204,7 @@ output$karyoPlot <- renderPlot({
   })
   # ............ ###############################
   # GO table CC all #####################
-  output$tableCCall <- DT::renderDataTable(server=TRUE,{
+  output$tableCCall <- DT::renderDataTable(server=FALSE,{
     validate(need(goDT$all, "Load file to render table"))
     goDT <- goDT$all
     names(goDT)[names(goDT) == "DE"] <- "DEG"
@@ -1265,7 +1275,7 @@ output$karyoPlot <- renderPlot({
   })
   # ............ ###############################
   # GO table BP UP#####################
-  output$tableBP <- DT::renderDataTable(server=TRUE,{
+  output$tableBP <- DT::renderDataTable(server=FALSE,{
     validate(need(goDT$up, "Load file to render table"))
     goDT <- goDT$up
     names(goDT)[names(goDT) == "DE"] <- "DEG"
@@ -1324,7 +1334,7 @@ output$karyoPlot <- renderPlot({
   })
   # ............ ###############################
   # GO table MF UP #####################
-  output$tableMF <- DT::renderDataTable({
+  output$tableMF <- DT::renderDataTable(server=FALSE,{
     validate(need(goDT$up, "Load file to render table"))
     goDT <- goDT$up
     names(goDT)[names(goDT) == "DE"] <- "DEG"
@@ -1385,7 +1395,7 @@ output$karyoPlot <- renderPlot({
   })
   # ............ ###############################
   # GO table CC UP #####################
-  output$tableCC <- DT::renderDataTable(server=TRUE,{
+  output$tableCC <- DT::renderDataTable(server=FALSE,{
     validate(need(goDT$up, "Load file to render table"))
     goDT <- goDT$up
     names(goDT)[names(goDT) == "DE"] <- "DEG"
@@ -1446,7 +1456,7 @@ output$karyoPlot <- renderPlot({
   })
   # ............ ###############################
   # GO table BP DOWN #####################
-  output$tableBPdown <- DT::renderDataTable(server=TRUE,{
+  output$tableBPdown <- DT::renderDataTable(server=FALSE,{
     validate(need(goDT$down, "Load file to render table"))
     goDT <- goDT$down
     names(goDT)[names(goDT) == "DE"] <- "DEG"
@@ -1506,7 +1516,7 @@ output$karyoPlot <- renderPlot({
   })
   # ............ ###############################
   # GO table MF DOWN #####################
-  output$tableMFdown <- DT::renderDataTable({
+  output$tableMFdown <- DT::renderDataTable(server=FALSE,{
     validate(need(goDT$down, "Load file to render table"))
     goDT <- goDT$down
     names(goDT)[names(goDT) == "DE"] <- "DEG"
@@ -1567,7 +1577,7 @@ output$karyoPlot <- renderPlot({
   })
   # ............ ###############################
   # GO table CC DOWN #####################
-  output$tableCCdown <- DT::renderDataTable(server=TRUE,{
+  output$tableCCdown <- DT::renderDataTable(server=FALSE,{
     validate(need(goDT$down, "Load file to render table"))
     goDT <- goDT$down
     names(goDT)[names(goDT) == "DE"] <- "DEG"
@@ -1630,7 +1640,7 @@ output$karyoPlot <- renderPlot({
   # variables gsea ################
   gsearow <- reactive({input$gseaTable_rows_selected}) 
     # GSEA table ##########################
-  output$gseaTable <- renderDataTable({
+  output$gseaTable <- renderDataTable(server=FALSE,{
     validate(need(gsea$gsea, "Load file to render table"))
     mygsea <- gsea$gsea
     if( length(which(mygsea@result$p.adjust<=0.05)) == 0 ){

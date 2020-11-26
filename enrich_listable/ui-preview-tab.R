@@ -65,7 +65,7 @@ fluidPage(
     column(
       width = 6,
       box(width=12,
-        dataTableOutput("tablepreview")
+        DT::dataTableOutput("tablepreview")
       )
     )
     ), 

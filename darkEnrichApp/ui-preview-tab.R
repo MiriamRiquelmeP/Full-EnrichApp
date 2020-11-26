@@ -69,12 +69,14 @@ fluidPage(
              fluidRow( column(width = 12,
                  tabBox(width = 12,
                      tabPanel(
-                         title = "Samples information - Coldata ",
-                         DTOutput("samples")
+                         title = "Statistical - Expression values",
+                         DTOutput("preview"),
+                         tags$br(),
+                         textOutput("lostgenes")
                      ),
                      tabPanel(
-                         title = "Statistical - Expression values",
-                         DTOutput("preview")
+                         title = "Samples information - Coldata ",
+                         DTOutput("samples")
                      )
                  )
              ) ), # fin column y tabbox

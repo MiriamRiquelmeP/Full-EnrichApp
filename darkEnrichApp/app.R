@@ -32,6 +32,7 @@ library(scales)
 library(stringr)
 library(shinybusy)
 library(visNetwork)
+library(ggrepel)
 source("utils.R")
 options(shiny.maxRequestSize = 3000*1024^2)
   
@@ -42,7 +43,12 @@ header <- dashboardHeader(title = "RNAseq viewer and report App",
                           tags$li(class="dropdown", actionButton("notesButton","Notes"),
                                   style="margin-top:8px; margin-right: 5px"),
                           tags$li(class = "dropdown", actionButton("aboutButton", "About"),
-                                  style="margin-top:8px; margin-right: 5px")
+                                  style="margin-top:8px; margin-right: 15px"),
+                          tags$li(class = "dropdown", actionBttn(inputId = "resetbutton",
+                                             label = "Reset App", style="simple", size="sm",
+                                             color ="danger"),
+                                  style="margin-top:8px; margin-right: 10px"
+                                   )
 )
 ### SIDEBAR ##########
 sidebar <- dashboardSidebar(useShinyalert(),
@@ -80,10 +86,6 @@ sidebar <- dashboardSidebar(useShinyalert(),
                             sidebarMenu("", sidebarMenuOutput("menu")),
                             tags$br(),
                             sidebarMenu(menuItem(uiOutput("design"))),
-                            tags$div(
-                              column(12, align="center",
-                                     actionBttn(inputId = "resetbutton",label = "Reset App",style="simple",
-                                                color ="danger")),
                             box(width = 12,
                             h5(strong("Generate report"), align = 'center'),
                               sidebarMenu( 
@@ -93,6 +95,7 @@ sidebar <- dashboardSidebar(useShinyalert(),
                                 menuItem(
                                   fluidRow(column(12, align = "center", offset=0, uiOutput("pdf")))))
                             ),
+                            tags$div(
                             tags$a(href='https://jacob.cea.fr/drf/ifrancoisjacob/Pages/Departements/MIRCen/themes/astrocytes-reactifs-biomarqueurs-imagerie-cibles-therapeutiques.aspx', target="_blank",
                                    tags$img(src='mircen.png',width='50%',
                                             style="padding: 5px; position: absolute; bottom:10px; left:0") ),
@@ -281,8 +284,7 @@ server <- function(input, output, session) {
   observeEvent(design(), {
     validate(need(design(), ""))
         closeAlert(session, "alert")
-          colData(datos$dds)@listData <-
-              colData(datos$dds)@listData %>%
+          colData(datos$dds)@listData <- colData(datos$dds)@listData %>%
               as.data.frame() %>% mutate_at(vars(-sizeFactor, contains('replaceable')), as.character) %>% ##aqui##
               mutate_at(vars(-sizeFactor, contains('replaceable')), as.factor) %>% as.list()
         res$sh <- as.data.frame(lfcShrink(datos$dds, coef=(as.numeric(design())+1), type="apeglm", parallel = TRUE))
@@ -292,6 +294,7 @@ server <- function(input, output, session) {
         res$sh$lfcSE <- round(res$sh$lfcSE,4)
         res$sh$log2FoldChange <- round(res$sh$log2FoldChange,4)
         res$sh <- cbind(`Description`=conversion$description, res$sh)
+        res$sh <- cbind(`ENTREZ`=conversion$ENTREZID, res$sh)
         res$sh <- cbind(`GeneName_Symbol`=conversion$consensus, res$sh)
         #res$sh$padj <- res$sh$pvalue  ##
         res$sh <-  res$sh %>% dplyr::select(-c(pvalue))
@@ -300,6 +303,7 @@ server <- function(input, output, session) {
         links = paste0("<a href='http://www.ensembl.org/",spc,"/Gene/Summary?db=core;g=",
                        rownames(res$sh),"' target='_blank'>",rownames(res$sh),"</a>")
         res$sh <- cbind(`GeneName_Ensembl`= links, res$sh)
+        res$lostgene <- length(which(is.na(res$sh$ENTREZ)))
         vsd$data <- vst(datos$dds)
         rlog$datos <- rlog(datos$dds)
         logfcRange$min <- min(res$sh$log2FoldChange)
@@ -880,32 +884,6 @@ server <- function(input, output, session) {
       )
   })
 
-  # preview samples ###################
-  output$samples <- DT::renderDataTable(server = TRUE,{
-    validate(need(datos$dds, "Load file to render table"))
-    metadata <- as.data.frame(colData(datos$dds)) %>% dplyr::select(-any_of(c("sizeFactor", "replaceable")))
-    tituloTabla <- paste0("Table: ColData | ","log2FC: ",logfc()[1],"_",logfc()[2]," | ","padj: ",padj()," | ",
-                          "Num genes Up/down: ",numgenesDE$up,"/",numgenesDE$down)
-    customButtons <- list(
-        list(extend = "copy", title=tituloTabla),
-        list(extend="collection", buttons = c("csv", "excel"),
-             text="Download", filename="coldata", title=tituloTabla ) )
-    
-    datatable( metadata, extensions = "Buttons",
-               rownames=FALSE,
-               filter = list(position="top", clear=FALSE),
-               options = list(
-                 columnDefs = list(list(orderable = TRUE,
-                                        className = "details-control",
-                                        targets = 1),
-                                   list(className = "dt-right", targets = 1:(ncol(metadata)-1))
-                 ),
-                 dom = "Bfrtipl",
-                 buttons = customButtons,
-                 list(pageLength = 10, white_space = "normal")
-               )
-    )
-  })  
   # preview table ###################
   output$preview <- DT::renderDT(server=FALSE,{
     validate(need(datos$dds, "Load file to render table"))
@@ -945,6 +923,37 @@ server <- function(input, output, session) {
                )
     )
   })
+  
+  output$lostgenes <- renderText({
+    print( paste0(res$lostgene," out of ", dim(res$sh)[1], " have no ENTREZ ID. These genes will be missing in enrichment analysis"))
+  })
+  
+# preview samples ###################
+  output$samples <- DT::renderDataTable(server = TRUE,{
+    validate(need(datos$dds, "Load file to render table"))
+    metadata <- as.data.frame(colData(datos$dds)) %>% dplyr::select(-any_of(c("sizeFactor", "replaceable")))
+    tituloTabla <- paste0("Table: ColData | ","log2FC: ",logfc()[1],"_",logfc()[2]," | ","padj: ",padj()," | ",
+                          "Num genes Up/down: ",numgenesDE$up,"/",numgenesDE$down)
+    customButtons <- list(
+      list(extend = "copy", title=tituloTabla),
+      list(extend="collection", buttons = c("csv", "excel"),
+           text="Download", filename="coldata", title=tituloTabla ) )
+    
+    datatable( metadata, extensions = "Buttons",
+               rownames=FALSE,
+               filter = list(position="top", clear=FALSE),
+               options = list(
+                 columnDefs = list(list(orderable = TRUE,
+                                        className = "details-control",
+                                        targets = 1),
+                                   list(className = "dt-right", targets = 1:(ncol(metadata)-1))
+                 ),
+                 dom = "Bfrtipl",
+                 buttons = customButtons,
+                 list(pageLength = 10, white_space = "normal")
+               )
+    )
+  })  
 # ............ #############
   # view pca plot data ###################
 output$pca3 <- renderUI({
