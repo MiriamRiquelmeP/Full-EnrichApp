@@ -69,7 +69,7 @@ sidebar <- dashboardSidebar(useShinyalert(),
                                     pickerInput(
                                         inputId = "specie",
                                         label = "Select species",
-                                        choices = list( "Human" = "Hs", "Mouse" = "Mm", "Rattus" = "Rn"),
+                                        choices = list( "Human" = "Hs", "Mouse" = "Mm"),
                                         options = list(title = "species"),
                                         selected = "Mm"
                                     ) 
@@ -978,16 +978,21 @@ output$barKeggAll <- downloadHandler(
   )
   
   # KEGG chordiag plot up ###############
-  output$keggChord <- renderChorddiag({
+  output$keggChord <- renderMychordplot({
     shiny::validate(need(kgg$up, "Load file to render ChordPlot"))
-    rowsUp<- rowsUp()
-    if(is.null(rowsUp)){
-        if( dim(kgg$up)[1]<10 ){rowsUp <-  seq_len(nrow(kgg$up)) }
-        else{ rowsUp <-  seq_len(10)  }
-        }
-    p <- chordPlot(kgg$up[rowsUp, ], nRows = length(rowsUp), orderby = "P.DE")
-    svg$chordUp <- list(p$x$matrix, rowsUp)
-    p
+    rowsUp <- rowsUp()
+    if (is.null(rowsUp)) {
+      if (dim(kgg$up)[1] < 10) {
+        rowsUp <-  seq_len(nrow(kgg$up))
+      }
+      else{
+        rowsUp <-  seq_len(10)
+      }
+    }
+    mychordplot(kgg$up[rowsUp, c("Pathway", "genes")], div = "keggChord")
+    # p <- chordPlot(kgg$up[rowsUp,], nRows = length(rowsUp), orderby = "P.DE")
+    # svg$chordUp <- list(p$x$matrix, rowsUp)
+    # p
   })
  output$legendChorUp <- renderPlot({
     shiny::validate(need(kgg$up, "Load file to render ChordPlot"))
@@ -1000,21 +1005,21 @@ output$barKeggAll <- downloadHandler(
     legendChorplot(kgg$up[rowsUp, ] )
   })
  # download chorplot All
- output$chordKeggUp <- downloadHandler(
-  filename = "chordKeggUp.svg",
-  content = function(file){
-    svg(file)
-    chordDiagram(svg$chordUp[[1]], transparency = 0.3, big.gap = 1,
-                 annotationTrack = c("grid"),
-                 grid.col = colorRampPalette( 
-                   RColorBrewer::brewer.pal(11, "Spectral"))(length(svg$chordUp[[2]])) )
-    circos.track(track.index = 1, panel.fun = function(x, y) {
-    circos.text(CELL_META$xcenter, CELL_META$ylim[1], CELL_META$sector.index, 
-        facing = "clockwise", niceFacing = TRUE, adj = c(0, 3))},
-    bg.border = NA)
-    dev.off()
-     }
-)
+ # output$chordKeggUp <- downloadHandler(
+ #  filename = "chordKeggUp.svg",
+ #  content = function(file){
+ #    svg(file)
+ #    chordDiagram(svg$chordUp[[1]], transparency = 0.3, big.gap = 1,
+ #                 annotationTrack = c("grid"),
+ #                 grid.col = colorRampPalette( 
+ #                   RColorBrewer::brewer.pal(11, "Spectral"))(length(svg$chordUp[[2]])) )
+ #    circos.track(track.index = 1, panel.fun = function(x, y) {
+ #    circos.text(CELL_META$xcenter, CELL_META$ylim[1], CELL_META$sector.index, 
+ #        facing = "clockwise", niceFacing = TRUE, adj = c(0, 3))},
+ #    bg.border = NA)
+ #    dev.off()
+ #     }
+# )
   # KEGG dotplot UP ################### 
   output$keggDotUp <- renderPlot({
     shiny::validate(need(kgg$up, "Load file and select to render dotPlot"))
@@ -1127,16 +1132,17 @@ output$barKeggAll <- downloadHandler(
   )
   
   # KEGG chordiag plot down ###############
-  output$keggChordDown <- renderChorddiag({
+  output$keggChordDown <- renderMychordplot({
     shiny::validate(need(kgg$down, "Load file to render ChordPlot"))
     rowsDown<- rowsDown()
     if(is.null(rowsDown)){
         if( dim(kgg$down)[1]<10 ){rowsDown <-  seq_len(nrow(kgg$down)) }
         else{ rowsDown <-  seq_len(10)  }
-        }
-    p <- chordPlot(kgg$down[rowsDown, ], nRows = length(rowsDown), orderby = "P.DE")
-    svg$chordDown <- list(p$x$matrix, rowsDown)
-    p
+    }
+    mychordplot(kgg$down[rowsDown, c("Pathway", "genes")], div = "keggChordDown")
+    # p <- chordPlot(kgg$down[rowsDown, ], nRows = length(rowsDown), orderby = "P.DE")
+    # svg$chordDown <- list(p$x$matrix, rowsDown)
+    # p
   })
  output$legendChorDown <- renderPlot({
     shiny::validate(need(kgg$down, "Load file to render ChordPlot"))
@@ -1149,21 +1155,21 @@ output$barKeggAll <- downloadHandler(
     legendChorplot(kgg$down[rowsDown, ] )
   })
   # download chorplot All
- output$chordKeggDown <- downloadHandler(
-  filename = "chordKeggDown.svg",
-  content = function(file){
-    svg(file)
-    chordDiagram(svg$chordDown[[1]], transparency = 0.3, big.gap = 1,
-                 annotationTrack = c("grid"),
-                 grid.col = colorRampPalette( 
-                   RColorBrewer::brewer.pal(11, "Spectral"))(length(svg$chordDown[[2]])) )
-    circos.track(track.index = 1, panel.fun = function(x, y) {
-    circos.text(CELL_META$xcenter, CELL_META$ylim[1], CELL_META$sector.index, 
-        facing = "clockwise", niceFacing = TRUE, adj = c(0, 3))},
-    bg.border = NA)
-    dev.off()
-     }
-)
+#  output$chordKeggDown <- downloadHandler(
+#   filename = "chordKeggDown.svg",
+#   content = function(file){
+#     svg(file)
+#     chordDiagram(svg$chordDown[[1]], transparency = 0.3, big.gap = 1,
+#                  annotationTrack = c("grid"),
+#                  grid.col = colorRampPalette( 
+#                    RColorBrewer::brewer.pal(11, "Spectral"))(length(svg$chordDown[[2]])) )
+#     circos.track(track.index = 1, panel.fun = function(x, y) {
+#     circos.text(CELL_META$xcenter, CELL_META$ylim[1], CELL_META$sector.index, 
+#         facing = "clockwise", niceFacing = TRUE, adj = c(0, 3))},
+#     bg.border = NA)
+#     dev.off()
+#      }
+# )
   # KEGG dotplot Down ################### 
   output$keggDotDown <- renderPlot({
     shiny::validate(need(kgg$down, "Load file and select to render dotPlot"))

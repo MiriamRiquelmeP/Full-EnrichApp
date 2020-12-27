@@ -33,6 +33,7 @@ library(stringr)
 library(shinybusy)
 library(visNetwork)
 library(ggrepel)
+library(mychordplot)
 source("utils.R")
 source("updatepopModals.R")
 options(shiny.maxRequestSize = 3000*1024^2)
@@ -62,9 +63,9 @@ sidebar <- dashboardSidebar(useShinyalert(),
                                 menuItem(
                                     pickerInput(
                                         inputId = "specie",
-                                        label = "1. Select specie",
+                                        label = "1. Select species",
                                         choices = list( "Human" = "Hs",
-                                                        "Mouse" = "Mm", "Rattus" = "Rn"),
+                                                        "Mouse" = "Mm"),
                                         options = list(title = "species"),
                                         selected = NULL
                                     ) 
@@ -403,7 +404,6 @@ server <- function(input, output, session) {
   explainPreview <- reactive({input$explainPreview})
   keggAllText <- reactive({input$keggAllText})
   GSEAText <- reactive({input$GSEAText})
-  specie <- reactive({input$specie})
   numheatmap <- reactive({input$numheatmap})
   gene <- reactive({input$gene})
   typeBarKeggAll <- reactive({input$selectkeggall})
@@ -1119,7 +1119,7 @@ output$texto2 <- renderTable( digits = -2, {
                         intgroup = variables()[1])
         symbol = as.character(res$sh$GeneName_Symbol[rownames(res$sh) == gene])
     } else{
-        if (specie() == "Mm" | specie() == "Rn") {
+        if (specie() == "Mm") {
             gene <- stringr::str_to_title(gene)
         }
         else{
@@ -1206,14 +1206,15 @@ output$karyoPlot <- renderPlot({
         
   })
   # KEGG chordiag plot All ###############
-  output$keggChordAll <- renderChorddiag({
+  output$keggChordAll <- renderMychordplot({
     validate(need(kgg$all, "Load file to render ChordPlot"))
     rowsAll <- rowsAll()
     if(is.null(rowsAll)){
         if( dim(kgg$all)[1]<10 ){rowsAll <-  seq_len(nrow(kgg$all)) }
         else{ rowsAll <-  seq_len(10)  }
-        }
-    chordPlot(kgg$all[rowsAll, ], nRows = length(rowsAll), orderby = "P.DE")
+    }
+    mychordplot(kgg$all[rowsAll, c("Pathway","genes") ], div="keggChordAll" )
+    #chordPlot(kgg$all[rowsAll, ], nRows = length(rowsAll), orderby = "P.DE")
   })
 
   output$legendChorAll <- renderPlot({
@@ -1305,14 +1306,15 @@ output$karyoPlot <- renderPlot({
     plotKegg(enrichdf = kgg$up[rowsUp,], nrows = length(rowsUp), colors = c(input$upColor))
   })
   # KEGG chordiag plot up ###############
-  output$keggChord <- renderChorddiag({
+  output$keggChord <- renderMychordplot({
     validate(need(kgg$up, "Load file to render ChordPlot"))
     rowsUp<- rowsUp()
     if(is.null(rowsUp)){
         if( dim(kgg$up)[1]<10 ){rowsUp <-  seq_len(nrow(kgg$up)) }
         else{ rowsUp <-  seq_len(10)  }
-        }
-    chordPlot(kgg$up[rowsUp, ], nRows = length(rowsUp), orderby = "P.DE")
+    }
+    mychordplot(kgg$up[rowsUp, c("Pathway","genes") ], div="keggChord" )
+    #chordPlot(kgg$up[rowsUp, ], nRows = length(rowsUp), orderby = "P.DE")
   })
  output$legendChorUp <- renderPlot({
     validate(need(kgg$up, "Load file to render ChordPlot"))
@@ -1398,14 +1400,15 @@ output$karyoPlot <- renderPlot({
              colors = c(input$downColor))
   })
   # KEGG chordiag plot down ###############
-  output$keggChordDown <- renderChorddiag({
+  output$keggChordDown <- renderMychordplot({
     validate(need(kgg$down, "Load file to render ChordPlot"))
     rowsdown <- rowsdown()
     if(is.null(rowsdown)){
         if( dim(kgg$down)[1]<10 ){rowsdown <-  seq_len(nrow(kgg$down)) }
         else{ rowsdown <-  seq_len(10)  }
-        }
-    chordPlot(kgg$down[rowsdown, ], nRows = length(rowsdown), orderby = "P.DE")
+    }
+    mychordplot(kgg$down[rowsdown, c("Pathway","genes") ], div="keggChordDown" )
+    #chordPlot(kgg$down[rowsdown, ], nRows = length(rowsdown), orderby = "P.DE")
   })
   output$legendChorDown <- renderPlot({
     validate(need(kgg$down, "Load file to render ChordPlot"))
