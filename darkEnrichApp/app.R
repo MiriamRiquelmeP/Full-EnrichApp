@@ -34,6 +34,7 @@ library(shinybusy)
 library(visNetwork)
 library(ggrepel)
 source("utils.R")
+source("updatepopModals.R")
 options(shiny.maxRequestSize = 3000*1024^2)
   
 ### HEADER ############ 
@@ -596,9 +597,10 @@ server <- function(input, output, session) {
       as.data.frame() %>% 
       dplyr::select(-any_of(c("sizeFactor", "replaceable"))) %>% 
       names()
+    def_nvar <- nvars[which(nvars %in% as.character(datos$dds@design)[2] ) ]
     selectInput("variables", label="Select condition[s] of interest to highlight",
                 choices = nvars,
-                selected = nvars[1],
+                selected = def_nvar,
                 multiple = TRUE)
   })
   # ........................####
@@ -902,7 +904,7 @@ server <- function(input, output, session) {
     datatable( res.sh, extensions = "Buttons", escape = FALSE,
                rownames = FALSE,
                filter = list(position="top", clear=FALSE),
-               options = list(order = list(list(6, 'asc')),
+               options = list(order = list(list(7, 'asc')),
                  lengthMenu = list(c(10,25,50,100,-1), c(10,25,50,100,"All")),
                  columnDefs = list(list(orderable = TRUE,
                                         className = "details-control",
@@ -1046,7 +1048,8 @@ output$texto1 <- renderTable( digits = -2, {
        font.legend = c("plain", 15),
        font.main = "plain",
        cex.axis = 1.1, cex.lab = 1.3,
-       ggtheme = theme_classic()
+       ggtheme = theme_classic(),
+       usergenes = genesVolcano()
     )
   })
 
@@ -1212,7 +1215,8 @@ output$karyoPlot <- renderPlot({
         }
     chordPlot(kgg$all[rowsAll, ], nRows = length(rowsAll), orderby = "P.DE")
   })
-output$legendChorAll <- renderPlot({
+
+  output$legendChorAll <- renderPlot({
     validate(need(kgg$all, "Load file to render ChordPlot"))
     rowsAll <- rowsAll()
     if(is.null(rowsAll)){
@@ -2065,33 +2069,40 @@ output$legendChorAll <- renderPlot({
   #author <- reactive({input$author})
   # generate report #############################
   output$report <- renderUI({
-    validate(need(res$sh, ""))
-    #downloadButton("report2", "html report")
     actionButton("report2", "html report")
   })
   
   observeEvent(input$report2, {
-      showModal(popupModal())
-    })
+    showModal(popupModal())
+  })
 
-  applyPress <- reactiveValues(ok=FALSE)
-  observeEvent(input$ok,{
-        applyPress$ok <- TRUE
-        vals$preview <- input$modalPreview
-        vals$keggAll <- input$modalkeggAll
-        vals$keggUp <- input$modalkeggUp
-        vals$keggDown <- input$modalkeggDown
-        vals$GOAll <- input$modalGOAll
-        vals$GOUp <- input$modalGOUp
-        vals$GODown <- input$modalGODown
-        vals$GSEA <- input$modalGSEA
-        #removeModal()
+  observeEvent(input$unselect, {
+    if (input$unselect > 0) {
+      if (input$unselect %% 2 == 0) {
+        selectPopUpModal(session = session)
+      } else{
+        unselectPopUpModal(session = session)
+      }
+    }
+  })
+  
+  applyPress <- reactiveValues(ok = FALSE)
+  observeEvent(input$ok, {
+    applyPress$ok <- TRUE
+    vals$preview <- input$modalPreview
+    vals$keggAll <- input$modalkeggAll
+    vals$keggUp <- input$modalkeggUp
+    vals$keggDown <- input$modalkeggDown
+    vals$GOAll <- input$modalGOAll
+    vals$GOUp <- input$modalGOUp
+    vals$GODown <- input$modalGODown
+    vals$GSEA <- input$modalGSEA
   })
   
   output$downloadhtml <- renderUI({
     validate(need(isTRUE(applyPress$ok), ""))
     downloadButton("download", "Download report")
-    })
+  })
   
     output$download <- downloadHandler(
     filename = "report.html",

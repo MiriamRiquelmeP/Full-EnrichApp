@@ -45,7 +45,7 @@ formatData <- function(genelist, specie, annotation){
   #   genelist[[ann]] <- stringr::str_to_title(genelist[[ann]])
   #   }
   annot <- NULL
-  genes <- genelist[[ann]]
+  genes <- as.character(genelist[[ann]])
   if(ann=="ENSEMBL"){
     annot$ENSEMBL <- data.frame(ENSEMBL = genes, stringsAsFactors = FALSE)
     annot$SYMBOL <-  mapIds(ensdb, keys=genes, column="SYMBOL",keytype="GENEID")

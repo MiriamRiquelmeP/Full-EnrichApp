@@ -156,6 +156,7 @@ if(!is.null(params$values$GOAll)){GOAll=TRUE}else{GOAll=FALSE}
 if(!is.null(params$values$GOUp)){GOUp=TRUE}else{GOUp=FALSE}
 if(!is.null(params$values$GODown)){GODown=TRUE}else{GODown=FALSE}
 if(!is.null(params$values$GSEA) & dim(params$gseagsea@result)[1]!=0 ){GSEA=TRUE}else{GSEA=FALSE}
+if(!isTRUE(params$tablegseaObj) | !isTRUE(params$tablegseaObj)){GSEA=FALSE}
 if(params$textnotes!=""){notes=TRUE}else{notes=FALSE}
 ```
 

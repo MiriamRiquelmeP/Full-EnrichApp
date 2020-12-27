@@ -56,15 +56,24 @@ fluidPage(
                                                   align = "center",
                                                   plotlyOutput("plotBPall"),
                                                   width = 9
-                                              ))),  #barplot
+                                              )),
+                                     fluidRow(column(width=2,
+                                            downloadButton("barBpAll","Download SVG")))
+                                     ),  #barplot
                             tabPanel(title = "Dotplot",
-                                     plotOutput("BPDotall")
+                                     plotOutput("BPDotall"),
+                                     fluidRow(column(width=2,
+                                            downloadButton("dotBpAll","Download SVG")))
                                      ), # dotplot
                             tabPanel(title = "GoBarplot", value = "gobarplotallbp",
-                                     plotOutput("gobarplotAllBP")
+                                     plotOutput("gobarplotAllBP"),
+                                     fluidRow(column(width=2,
+                                            downloadButton("gobarBpAll","Download SVG")))
                                      ),
                             tabPanel(title = "GoCirclePlot", value = "gocirplotallbp",
-                                     plotOutput("goCircleAllBP")
+                                     plotOutput("goCircleAllBP"),
+                                     fluidRow(column(width=2,
+                                            downloadButton("cirBpAll","Download SVG")))
                                      )
                         )
                     )
@@ -120,15 +129,24 @@ fluidPage(
                                                   align = "center",
                                                   plotlyOutput("plotMFall"),
                                                   width = 9
-                                              ))),  #barplot
+                                              )),
+                                     fluidRow(column(width=2,
+                                            downloadButton("barMfAll","Download SVG")))
+                                     ),  #barplot
                             tabPanel(title = "Dotplot",
-                                     plotOutput("MFDotall")
+                                     plotOutput("MFDotall"),
+                                     fluidRow(column(width=2,
+                                            downloadButton("dotMfAll","Download SVG")))
                                      ), # dotplot
                             tabPanel(title = "GoBarplot", value = "gobarplotallmf",
-                                     plotOutput("gobarplotAllMF")
+                                     plotOutput("gobarplotAllMF"),
+                                     fluidRow(column(width=2,
+                                            downloadButton("gobarMfAll","Download SVG")))
                                      ),
                             tabPanel(title = "GoCirclePlot", value = "gocirplotallmf",
-                                     plotOutput("goCircleAllMF")
+                                     plotOutput("goCircleAllMF"),
+                                     fluidRow(column(width=2,
+                                            downloadButton("cirMfAll","Download SVG")))
                             )
                         )
                     )
@@ -183,15 +201,24 @@ fluidPage(
                                                   align = "center",
                                                   plotlyOutput("plotCCall"),
                                                   width = 9
-                                              ))),  #barplot
+                                              )),
+                                     fluidRow(column(width=2,
+                                            downloadButton("barCcAll","Download SVG")))
+                                     ),  #barplot
                             tabPanel(title = "Dotplot",
-                                     plotOutput("CCDotall")
+                                     plotOutput("CCDotall"),
+                                     fluidRow(column(width=2,
+                                            downloadButton("dotCcAll","Download SVG")))
                                      ), # dotplot
                             tabPanel("GoBarplot", value = "gobarplotallcc", 
-                                     plotOutput("gobarplotAllCC")
+                                     plotOutput("gobarplotAllCC"),
+                                     fluidRow(column(width=2,
+                                            downloadButton("gobarCcAll","Download SVG")))
                                      ),
                             tabPanel( "GoCirclePlot", value="gocirplotallcc",
-                                     plotOutput("goCircleAllCC")
+                                     plotOutput("goCircleAllCC"),
+                                     fluidRow(column(width=2,
+                                            downloadButton("cirCcAll","Download SVG")))
                             )
                         ) #tabbox
                     ) #column 
@@ -230,16 +257,24 @@ fluidPage(
                 column( width = 9, offset = 3,
                     tabBox( width = 12, # caja con pestañas para los plots
                         tabPanel(title = "Barplot",
-                                  plotlyOutput("plotBP")
+                                  plotlyOutput("plotBP"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("barBpUp","Download SVG")))
                                               ),  #barplot
                         tabPanel(title = "Dotplot",
-                                 plotOutput("BPDotUp")
+                                 plotOutput("BPDotUp"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("dotBpUp","Download SVG")))
                                  ), # dotplot
                         tabPanel(title = "GoBarplot",
-                                     plotOutput("gobarplotUpBP")
+                                     plotOutput("gobarplotUpBP"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("gobarBpUp","Download SVG")))
                                      ),
                         tabPanel(title = "GoCirclePlot",
-                                     plotOutput("goCircleUpBP")
+                                     plotOutput("goCircleUpBP"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("cirBpUp","Download SVG")))
                                      )
                         )
                     )
@@ -272,16 +307,24 @@ fluidRow(  # primera fila
                 column( width = 9, offset = 3,
                     tabBox( width = 12, # caja con pestañas para los plots
                         tabPanel(title = "Barplot",
-                                  plotlyOutput("plotMF")
+                                  plotlyOutput("plotMF"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("barMfUp","Download SVG")))
                                               ),  #barplot
                         tabPanel(title = "Dotplot",
-                                 plotOutput("MFDotUp")
+                                 plotOutput("MFDotUp"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("dotMfUp","Download SVG")))
                                  ), # dotplot
                         tabPanel(title = "GoBarplot",
-                                     plotOutput("gobarplotUpMF")
+                                     plotOutput("gobarplotUpMF"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("gobarMfUp","Download SVG")))
                                      ),
                         tabPanel(title = "GoCirclePlot",
-                                     plotOutput("goCircleUpMF")
+                                     plotOutput("goCircleUpMF"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("cirMfUp","Download SVG")))
                                      )
                         )
                     )
@@ -314,16 +357,24 @@ fluidRow(  # primera fila
                 column( width = 9, offset = 3,
                     tabBox( width = 12, # caja con pestañas para los plots
                         tabPanel(title = "Barplot",
-                                  plotlyOutput("plotCC")
+                                  plotlyOutput("plotCC"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("barCcUp","Download SVG")))
                                               ),  #barplot
                         tabPanel(title = "Dotplot",
-                                 plotOutput("CCDotUp")
+                                 plotOutput("CCDotUp"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("dotCcUp","Download SVG")))
                                  ), # dotplot
                         tabPanel(title = "GoBarplot",
-                                     plotOutput("gobarplotUpCC")
+                                     plotOutput("gobarplotUpCC"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("gobarCcUp","Download SVG")))
                                      ),
                         tabPanel(title = "GoCirclePlot",
-                                     plotOutput("goCircleUpCC")
+                                     plotOutput("goCircleUpCC"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("cirCcUp","Download SVG")))
                                      )
                             )
                         )
@@ -360,16 +411,24 @@ fluidRow(  # primera fila
                 column( width = 9, offset = 3,
                     tabBox( width = 12, # caja con pestañas para los plots
                         tabPanel(title = "Barplot",
-                                  plotlyOutput("plotBPdown")
+                                  plotlyOutput("plotBPdown"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("barBpDown","Download SVG")))
                                               ),  #barplot
                         tabPanel(title = "Dotplot",
-                                 plotOutput("BPDotDown")
+                                 plotOutput("BPDotDown"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("dotBpDown","Download SVG")))
                                  ), # dotplot
                         tabPanel(title = "GoBarplot",
-                                     plotOutput("gobarplotDownBP")
+                                     plotOutput("gobarplotDownBP"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("gobarBpDown","Download SVG")))
                                      ),
                         tabPanel(title = "GoCirclePlot",
-                                     plotOutput("goCircleDownBP")
+                                     plotOutput("goCircleDownBP"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("cirBpDown","Download SVG")))
                                      )
                         )
                     )
@@ -402,16 +461,24 @@ fluidRow(  # primera fila
                 column( width = 9, offset = 3,
                     tabBox( width = 12, # caja con pestañas para los plots
                         tabPanel(title = "Barplot",
-                                  plotlyOutput("plotMFdown")
+                                  plotlyOutput("plotMFdown"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("barMfDown","Download SVG")))
                                               ),  #barplot
                         tabPanel(title = "Dotplot",
-                                 plotOutput("MFDotDown")
+                                 plotOutput("MFDotDown"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("dotMfDown","Download SVG")))
                                  ), # dotplot
                         tabPanel(title = "GoBarplot",
-                                     plotOutput("gobarplotDownMF")
+                                     plotOutput("gobarplotDownMF"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("gobarMfDown","Download SVG")))
                                      ),
                         tabPanel(title = "GoCirclePlot",
-                                     plotOutput("goCircleDownMF")
+                                     plotOutput("goCircleDownMF"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("cirMfDown","Download SVG")))
                                      )
                         )
                     )
@@ -444,16 +511,24 @@ fluidRow(  # primera fila
                 column( width = 9, offset = 3,
                     tabBox( width = 12, # caja con pestañas para los plots
                         tabPanel(title = "Barplot",
-                                  plotlyOutput("plotCCdown")
+                                  plotlyOutput("plotCCdown"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("barCcDown","Download SVG")))
                                               ),  #barplot
                         tabPanel(title = "Dotplot",
-                                 plotOutput("CCDotDown")
+                                 plotOutput("CCDotDown"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("dotCcDown","Download SVG")))
                                  ), # dotplot
                         tabPanel(title = "GoBarplot",
-                                     plotOutput("gobarplotDownCC")
+                                     plotOutput("gobarplotDownCC"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("gobarCcDown","Download SVG")))
                                      ),
                         tabPanel(title = "GoCirclePlot",
-                                     plotOutput("goCircleDownCC")
+                                     plotOutput("goCircleDownCC"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("cirCcDown","Download SVG")))
                                      )
                         )
                     )

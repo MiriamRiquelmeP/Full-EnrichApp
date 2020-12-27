@@ -407,7 +407,7 @@ fluidPage(
  fluidRow(column(width = 4, offset = 4,
             strong("Click to compute enrichment"),
             tags$br(),
-            actionButton("runEnrich", "Run enrichment", width = "100%")
+            actionBttn("runEnrich", label = "Run enrichment", size = "lg", color = "default", icon = icon("images"))
              ))
 ) # fin page
 

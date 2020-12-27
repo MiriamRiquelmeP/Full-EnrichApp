@@ -60,26 +60,39 @@ fluidPage(
                                      )), # fin fluidRow, column & radioGroupButtons
                                      fluidRow(class = "text-center",
                                               column(
+                                                  width = 9,
                                                   align = "center",
                                                   plotlyOutput("keggPlotAll"),
-                                                  width = 9
-                                              ))),  #barplot
+                                              )
+                                              ),
+                                         downloadButton("barKeggAll","Download SVG")
+                                    ),  #barplot
                         tabPanel(title = "Chordplot",
                                  tagList(fluidRow(column(width = 8,
-                                                         chorddiagOutput("keggChordAll",
+                                                         mychordplotOutput("chartdiv",
                                                                          width = "100%",
                                                                          height = "600px") 
                                                          ),
                                                   column(width = 4,
                                                          plotOutput("legendChorAll", width="100%",
                                                                     height="600px")
-                                                         )) )
+                                                         )) ),
+                                 fluidRow(column(
+                                     width=2,
+                                     downloadButton(outputId = "chordKeggAll","Download SVG")
+                                 ))
                                  ), #cordplot
                         tabPanel(title = "Dotplot",
-                                 plotOutput("keggDotAll")
+                                 plotOutput("keggDotAll"),
+                                 fluidRow(column(width=2,
+                                                 downloadButton("dotkeggAll","Download SVG"))),
                                  ), # dotplot
                         tabPanel(title = "Heatmap",
-                                 plotlyOutput("heatmapKeggAll", height = "600px")
+                                 plotlyOutput("heatmapKeggAll", height = "600px"),
+                                 fluidRow(column(
+                                     width=2,
+                                     downloadButton(outputId = "heatKeggAll","Download SVG")
+                                 ))
                                  ), # heatmap
                         tabPanel(title = "Netplot",
                                  column(width = 1,
@@ -92,7 +105,11 @@ fluidPage(
                                         ),
                                  column(width = 11,
                                         uiOutput("keggAllNet")
-                                        )
+                                        ),
+                                  fluidRow(column(
+                                     width=2,
+                                     downloadButton(outputId = "cnetKeggAll","Download SVG")
+                                 ))
                                   ) #visnetall
                         )
                     )
@@ -140,7 +157,9 @@ fluidPage(
                     width = 9, offset = 3,
                     tabBox( width = 12, # caja con pestañas para los plots
                         tabPanel(title = "Barplot",
-                                 plotlyOutput("keggPlot")
+                                 plotlyOutput("keggPlot"),
+                                 fluidRow(column(width=3,
+                                 downloadButton("barKeggUp","Download SVG"))),
                                               ),  #barplot
                         tabPanel(title = "Chordplot",
                                  tagList(fluidRow(
@@ -156,13 +175,21 @@ fluidPage(
                                                     width ="100%",
                                                     height ="600px")
                                      )
+                                 )),
+                                fluidRow(column(
+                                     width=2,
+                                     downloadButton(outputId = "chordKeggUp","Download SVG")
                                  ))
                                  ), #cordplot
                         tabPanel(title = "Dotplot",
-                                 plotOutput("keggDotUp")
+                                 plotOutput("keggDotUp"),
+                                    fluidRow(column(width=2,
+                                         downloadButton("dotKeggUp","Download SVG"))),
                                  ), # dotplot
                         tabPanel(title = "Heatmap",
-                                 plotlyOutput("heatmapKeggUp", height = "600px")
+                                 plotlyOutput("heatmapKeggUp", height = "600px"),
+                                 fluidRow(column(width=2,
+                                         downloadButton("heatKeggUp","Download SVG"))),
                                  ), # heatmap
                         tabPanel(title = "Netplot",
                                  column(width = 1,
@@ -174,7 +201,9 @@ fluidPage(
                                         plotOutput("legendUp")
                                         ),
                                  column(width = 11,
-                                        uiOutput("keggUpNet")
+                                        uiOutput("keggUpNet"),
+                                        fluidRow(column(width=2,
+                                            downloadButton("cnetkeggUp","Download SVG"))),
                                         )
                                   ) #visnetup
                         )
@@ -223,7 +252,9 @@ fluidPage(
                     width = 9, offset = 3,
                     tabBox( width = 12, # caja con pestañas para los plots
                         tabPanel(title = "Barplot",
-                                 plotlyOutput("keggPlotDown")
+                                 plotlyOutput("keggPlotDown"),
+                                 fluidRow(column(width=3,
+                                    downloadButton("barKeggDown","Download SVG"))),
                                               ),  #barplot
                         tabPanel(title = "Chordplot",
                                  tagList(fluidRow(
@@ -239,13 +270,21 @@ fluidPage(
                                                     width ="100%",
                                                     height ="600px")
                                      )
-                                     ))
+                                     )),
+                                    fluidRow(column(
+                                     width=2,
+                                     downloadButton(outputId = "chordKeggDown","Download SVG")
+                                 ))
                                  ), #cordplot
                         tabPanel(title = "Dotplot",
-                                 plotOutput("keggDotDown")
+                                 plotOutput("keggDotDown"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("dotKeggDown","Download SVG"))),
                                  ), # dotplot
                         tabPanel(title = "Heatmap",
-                                 plotlyOutput("heatmapKeggDown", height = "600px")
+                                 plotlyOutput("heatmapKeggDown", height = "600px"),
+                                 fluidRow(column(width=2,
+                                            downloadButton("heatKeggDown","Download SVG"))),
                                  ), # heatmap
                         tabPanel(title = "Netplot",
                                  column(width = 1,
@@ -257,7 +296,9 @@ fluidPage(
                                         plotOutput("legendDown")
                                         ),
                                  column(width = 11,
-                                        uiOutput("keggDownNet")
+                                        uiOutput("keggDownNet"),
+                                        fluidRow(column(width=2,
+                                            downloadButton("cnetkeggDown","Download SVG"))),
                                         )
                                   ) #visnetup
                         )
