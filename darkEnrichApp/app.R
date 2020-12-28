@@ -500,8 +500,8 @@ server <- function(input, output, session) {
         }
   })
     observe({
-      validate(need(input$sampleFile, ""))
-      validate(need(input$countFile, ""))
+      validate(need(input$sampleFile, ""),
+               need(input$countFile, ""))
       samplesCount <- sort(colnames(countdata$count))
       samplesSample <- sort(countdata$sample[,1])
       if( is_empty(which(samplesSample != samplesCount ) )){
@@ -584,8 +584,8 @@ server <- function(input, output, session) {
   })
   
   output$importvw <- renderMenu({
-    validate(need(countdata$sample,""))
-    validate(need(countdata$count,""))
+    validate(need(countdata$sample,""),
+             need(countdata$count,""))
     menuItem("5. Import view",
              tabName = "tabimport",
              icon = icon("file-import"))
@@ -664,8 +664,8 @@ server <- function(input, output, session) {
   # ........................####
   # ui selector de genes para volcano plot #######################
   output$geneSelector <- renderUI({
-    validate(need(res$sh, ""))
-    validate(need(padj(),""))
+    validate(need(res$sh, ""),
+             need(padj(),""))
     genes <- as.character(res$sh$GeneName_Symbol[ which(!( res$sh$padj>padj() &
                                                              res$sh$log2FoldChange>logfc()[1] &
                                                              res$sh$log2FoldChange<logfc()[2] )) ])
@@ -695,8 +695,8 @@ server <- function(input, output, session) {
                   min=round(fcRange$min,3), max=round(fcRange$max, 3),
                   value = c(valmin, valmax), step = 0.1 )
     } else {
-      validate(need(datos$dds, ""))
-      validate(need(fc(), ""))
+      validate(need(datos$dds, ""),
+               need(fc(), ""))
         if(is.null(input$fc[1]) ){
           valmin = -0.5
           valmax = 0.5
@@ -741,9 +741,9 @@ server <- function(input, output, session) {
   })
   # ui selector Colores para PCA y demás #######################
   output$colorPalettes <- renderUI({
-      validate(need(datos$dds, ""))
-      validate(need(variables(), ""))
-      validate(need(coloresPCA$numNiveles, ""))
+      validate(need(datos$dds, ""),
+               need(variables(), ""),
+               need(coloresPCA$numNiveles, ""))
       l1 <- rep(1:6, times = coloresPCA$numNiveles / 6 , length.out = coloresPCA$numNiveles)
       l2 <- rep(1:9, each = 6, length.out = coloresPCA$numNiveles)
       selectores <- lapply(seq_len(coloresPCA$numNiveles), function(x){
@@ -760,34 +760,34 @@ server <- function(input, output, session) {
  
   # infoboxes ###############################
   output$allbox <- renderInfoBox({
-      validate(need(res$sh, ""))
-      validate(need(padj(), ""))
-      validate(need(logfc(), ""))
+      validate(need(res$sh, ""),
+               need(padj(), ""),
+               need(logfc(), ""))
       numall <- nrow( res$sh[ ((res$sh$log2FoldChange >= logfc()[2] |
                                     res$sh$log2FoldChange< logfc()[1]) &
                                    res$sh$padj <= padj() ),] ) 
       infoBox("All DE genes", numall, icon = icon("arrows-alt-v"), color = "light-blue", fill = TRUE)
   })
   output$upbox <- renderInfoBox({
-      validate(need(res$sh, ""))
-      validate(need(padj(), ""))
-      validate(need(logfc(), ""))
+      validate(need(res$sh, ""),
+               need(padj(), ""),
+               need(logfc(), ""))
       numup <- nrow( res$sh[(res$sh$log2FoldChange >= logfc()[2]) & (res$sh$padj <= padj()), ]) 
       numgenesDE$up <- numup
       infoBox("Upregulated genes", numup, icon = icon("thumbs-up", lib = "glyphicon"), color = "light-blue", fill=TRUE)
   })
   output$downbox <- renderInfoBox({
-      validate(need(res$sh, ""))
-      validate(need(padj(), ""))
-      validate(need(logfc(), ""))
+      validate(need(res$sh, ""),
+               need(padj(), ""),
+               need(logfc(), ""))
       numdown <- nrow( res$sh[(res$sh$log2FoldChange <= logfc()[1]) & (res$sh$padj <= padj()), ])
       numgenesDE$down <- numdown
       infoBox("Downregulated genes", numdown, icon = icon("thumbs-down", lib = "glyphicon"), color = "light-blue", fill=TRUE)
   })
   
   output$fcdown <- renderUI({
-        validate(need(logfcRange$min, ""))
-        validate(need(logfc(),""))
+        validate(need(logfcRange$min, ""),
+                 need(logfc(),""))
         initMin <- round( logfcRange$min, 2)
         initMax <- round( logfcRange$max, 2)
         if(logfc()[1]>=0){
@@ -825,8 +825,8 @@ server <- function(input, output, session) {
       )
   })
   output$fcup <- renderUI({
-        validate(need(logfcRange$min, ""))
-        validate(need(logfc(),""))
+        validate(need(logfcRange$min, ""),
+                 need(logfc(),""))
         initMin <- round( logfcRange$min, 2)
         initMax <- round( logfcRange$max, 2)
         if(logfc()[2]>=0){
@@ -888,8 +888,8 @@ server <- function(input, output, session) {
 
   # preview table ###################
   output$preview <- DT::renderDT(server=FALSE,{
-    validate(need(datos$dds, "Load file to render table"))
-    validate(need(res$sh, "Load file to render table"))
+    validate(need(datos$dds, "Load file to render table"),
+             need(res$sh, "Load file to render table"))
     res.sh <- res$sh
     res.sh <- res.sh[ ((res.sh$log2FoldChange >= logfc()[2] |
                           res.sh$log2FoldChange < logfc()[1]) &
@@ -967,11 +967,11 @@ output$pca3 <- renderUI({
   })
 
 output$pca <- renderPlotly({
-    validate(need(!isTRUE(pca3d()), ""))
-    validate(need(datos$dds, ""))
-    validate(need(variables(), "Select condition to render PCA"))
-    validate(need(samplename(), ""))
-    validate(need(coloresPCA$colores(), ""))
+    validate(need(!isTRUE(pca3d()), ""),
+             need(datos$dds, ""),
+             need(variables(), "Select condition to render PCA"),
+             need(samplename(), ""),
+             need(coloresPCA$colores(), ""))
     plotPCA(
         rlog$datos,
         intgroup = variables(),
@@ -984,9 +984,9 @@ output$pca <- renderPlotly({
 })
 
 output$pca3d <- renderRglwidget({
-    validate(need(datos$dds, ""))
-    validate(need(variables(),"Select condition to render PCA" ) )
-    validate(need(coloresPCA$colores(), "" ))
+    validate(need(datos$dds, ""),
+             need(variables(),"Select condition to render PCA" ),
+             need(coloresPCA$colores(), "" ))
     d <- pca3dplot(rlog$datos, intgroup = variables(), ntop = 500,
                    returnData = TRUE )
     levels(d$labels) <- coloresPCA$colores()
@@ -1037,8 +1037,8 @@ output$texto1 <- renderTable( digits = -2, {
 # view MA plot data ###################
   output$MA <- renderPlot( {
     #validate(need(datos$dds, ""))
-    validate(need(res$sh, "Load file to render plot"))
-    validate(need(logfc(), ""))
+    validate(need(res$sh, "Load file to render plot"),
+             need(logfc(), ""))
     MA(res$sh, main = 'MA plot applying the DESeq2 Shrinkage normalization for Foldchange',
        fdr = padj(), fcDOWN = logfc()[1], fcUP = logfc()[2] , size = 1.5,
        palette = c(input$upColor, input$downColor, "gray"),
@@ -1066,27 +1066,29 @@ output$texto2 <- renderTable( digits = -2, {
 
   # view HEATMAP data ###################
   output$heat <- renderPlotly( {
-    validate(need(datos$dds, ""))
-    validate(need(vsd$data, "Load file to render plot"))
-    validate(need(variables(),"Load condition to render plot" ) )
-    validate(need(samplename(),"Load condition to render plot" ) )
+    validate(need(datos$dds, ""),
+             need(vsd$data, "Load file to render plot"),
+             need(variables(),"Load condition to render plot" ),
+             need(samplename(),"Load condition to render plot" ) )
     heat2(vsd$data, n=numheatmap(), intgroup = variables(), sampleName = samplename(),
          specie=specie(), customColor = coloresPCA$colores() )
   })
   # view CLUSTER data ###################
   output$cluster <- renderPlotly( {
-    validate(need(datos$dds, ""))
-    validate(need(vsd$data, "Load file to render plot"))
-    validate(need(variables(),"Load condition to render plot" ) )
-    validate(need(samplename(),"Load condition to render plot" ) )
+    validate(
+      need(datos$dds, ""),
+      need(vsd$data, "Load file to render plot"),
+      need(variables(), "Load condition to render plot"),
+      need(samplename(), "Load condition to render plot")
+    )
     cluster(vsd$data, intgroup = samplename())
   })
 # view TOP6 data ###################
   output$top6 <- renderPlotly( {
-    validate(need(datos$dds, ""))
-    validate(need(res$sh, "Load file to render plot"))
-    validate(need(variables(),"Load condition to render plot" ) )
-    validate(need(coloresPCA$colores(), ""))
+    validate(need(datos$dds, ""),
+             need(res$sh, "Load file to render plot"),
+             need(variables(),"Load condition to render plot" ),
+             need(coloresPCA$colores(), ""))
     topGenes <- rownames(res$sh)[order(res$sh$padj)][1:6]
     topSymbol <- as.character(res$sh$GeneName_Symbol)[order(res$sh$padj)][1:6]
     z <- lapply(topGenes, function(x) plotCounts(dds=datos$dds, gene=x,
@@ -1107,11 +1109,11 @@ output$texto2 <- renderTable( digits = -2, {
     })
 # view TOP1 data ###################  
   output$top1 <- renderPlotly( {
-    validate(need(datos$dds, ""))
-    validate(need(res$sh, "Load file to render plot"))
-    validate(need(variables(),"Load condition to render plot" ) )
-    validate(need(coloresPCA$colores(), ""))
-    validate(need(gene(), "Enter a gene of interest in Ensembl or symbol name"))
+    validate(need(datos$dds, ""),
+             need(res$sh, "Load file to render plot"),
+             need(variables(),"Load condition to render plot" ),
+             need(coloresPCA$colores(), ""),
+             need(gene(), "Enter a gene of interest in Ensembl or symbol name"))
     gene <- gene()
     if (grepl("^ENS", gene, ignore.case = TRUE)) {
         gene <- toupper(gene)
@@ -1156,12 +1158,12 @@ output$karyoPlot <- renderPlot({
 
  # Boxviolin plot #################################
   output$boxviolin <- renderPlotly({
-          validate(need(datos$dds, "Load file and condition to render Volcano"))
-          validate(need(variables(),"Load condition to render plot" ) )
-          validate(need(vsd$data, ""))
-          validate(need(variables(), ""))
-          validate(need(samplename(),"" ) )
-          validate(need(coloresPCA$colores(), ""))
+          validate(need(datos$dds, "Load file and condition to render Volcano"),
+                   need(variables(),"Load condition to render plot" ),
+                   need(vsd$data, ""),
+                   need(variables(), ""),
+                   need(samplename(),"" ),
+                   need(coloresPCA$colores(), ""))
           boxViolin( names = samplename() , vsd=vsd$data, boxplotswitch=boxplotswitch(),
                     intgroup=variables(), customColor = coloresPCA$colores() ) 
   })
@@ -1228,24 +1230,24 @@ output$karyoPlot <- renderPlot({
   })
   # KEGG dotplot All ################### 
   output$keggDotAll <- renderPlot({
-    validate(need(kgg$all, "Load file and select to render dotPlot"))
-    validate(need(rowsAll(), "Select the paths of interest to render DotPlot"))
+    validate(need(kgg$all, "Load file and select to render dotPlot"),
+             need(rowsAll(), "Select the paths of interest to render DotPlot"))
     rowsAll <- rowsAll()
     if(is.null(rowsAll)){rowsAll <- c(1:20)}
     dotPlotkegg(kgg$all[rowsAll,], n = length(rowsAll))
   })
   # KEGG heatmap All #################
   output$heatmapKeggAll <- renderPlotly({
-    validate(need(kgg$all, "Load file and select to render Heatmap"))
-    validate(need(rowsAll(), "Select the paths of interest to render HeatMap"))
-    validate(need(kggDT$all, ""))
+    validate(need(kgg$all, "Load file and select to render Heatmap"),
+             need(rowsAll(), "Select the paths of interest to render HeatMap"),
+             need(kggDT$all, ""))
     heatmapKeggLogFC(kggDT$all, res$sh, rowsAll() ) 
   })
   # KEGG cnet All #################
   output$legend <- renderPlot({
-    validate(need(kgg$all, "Load file and select to render Net Plot"))
-    validate(need(rowsAll(), "Select the paths of interest to render NetPlot"))
-    validate(need(kggDT$all, ""))
+    validate(need(kgg$all, "Load file and select to render Net Plot"),
+             need(rowsAll(), "Select the paths of interest to render NetPlot"),
+             need(kggDT$all, ""))
     visnetLegend(kggDT = kggDT$all , rows = rowsAll() )
   })
 
@@ -1258,15 +1260,15 @@ output$karyoPlot <- renderPlot({
   })
 
   output$cnetKeggAll <- renderPlot({
-    validate(need(kgg$all, "Load file and select to render Net Plot"))
-    validate(need(rowsAll(), "Select the paths of interest to render NetPlot"))
+    validate(need(kgg$all, "Load file and select to render Net Plot"),
+             need(rowsAll(), "Select the paths of interest to render NetPlot"))
     customCnetKegg(kgg$all, rowsAll(), genesUp = data$genesUp, genesDown = data$genesDown)
   })
 
   output$visnetKeggAll <- renderVisNetwork({
-    validate(need(kgg$all, "Load file and select to render Net Plot"))
-    validate(need(rowsAll(), "Select the paths of interest to render NetPlot"))
-    validate(need(kggDT$all, ""))
+    validate(need(kgg$all, "Load file and select to render Net Plot"),
+             need(rowsAll(), "Select the paths of interest to render NetPlot"),
+             need(kggDT$all, ""))
     visData <- customVisNet(kgg$all, nTerm=rowsAll(), kggDT$all,
                              up = data$genesUp$SYMBOL, down = data$genesDown$SYMBOL )
     visNetwork(visData$nodes, visData$edges, background = "#ffffff") %>%
@@ -1328,17 +1330,17 @@ output$karyoPlot <- renderPlot({
   })
   # KEGG dotplot UP ################### 
   output$keggDotUp <- renderPlot({
-    validate(need(kgg$up, "Load file and select to render dotPlot"))
-    validate(need(rowsUp(), "Select the paths of interest to render DotPlot"))
+    validate(need(kgg$up, "Load file and select to render dotPlot"),
+             need(rowsUp(), "Select the paths of interest to render DotPlot"))
     rowsUp <- rowsUp()
     if(is.null(rowsUp)){rowsUp <- c(1:20)}
     dotPlotkegg(kgg$up[rowsUp,], n = length(rowsUp))
   })
   # KEGG heatmap Up #################
   output$heatmapKeggUp <- renderPlotly({
-    validate(need(kgg$up, "Load file and select to render Heatmap"))
-    validate(need(rowsUp(), "Select the paths of interest to render HeatMap"))
-    validate(need(kggDT$up, ""))
+    validate(need(kgg$up, "Load file and select to render Heatmap"),
+             need(rowsUp(), "Select the paths of interest to render HeatMap"),
+             need(kggDT$up, ""))
     #heatmapKegg(kggDT$up, rowsUp())
     heatmapKeggLogFC(kggDT$up, res$sh, rowsUp() ) 
   })
@@ -1351,14 +1353,14 @@ output$karyoPlot <- renderPlot({
     }
   })
   output$cnetKeggUp <- renderPlot({
-    validate(need(kgg$up, "Load file and select to render Net Plot"))
-    validate(need(rowsUp(), "Select the paths of interest to render NetPlot"))
+    validate(need(kgg$up, "Load file and select to render Net Plot"),
+             need(rowsUp(), "Select the paths of interest to render NetPlot"))
     customCnetKegg(kgg$up, rowsUp(), genesUp = data$genesUp, genesDown = data$genesDown)
   })
   output$visnetKeggUp <- renderVisNetwork({
-    validate(need(kgg$up, "Load file and select to render Net Plot"))
-    validate(need(rowsUp(), "Select the paths of interest to render NetPlot"))
-    validate(need(kggDT$up, ""))
+    validate(need(kgg$up, "Load file and select to render Net Plot"),
+             need(rowsUp(), "Select the paths of interest to render NetPlot"),
+             need(kggDT$up, ""))
     visData <- customVisNet(kgg$up, nTerm=rowsUp(), kggDT$up,
                              up = data$genesUp$SYMBOL, down = data$genesDown$SYMBOL )
     visNetwork(visData$nodes, visData$edges, background = "#ffffff") %>%
@@ -1421,16 +1423,16 @@ output$karyoPlot <- renderPlot({
   })
   # KEGG dotplot Down ################### 
   output$keggDotDown <- renderPlot({
-    validate(need(kgg$down, "Load file to render DotPlot"))
-    validate(need(rowsdown(), "Select the paths of interest to render dotPlot"))
+    validate(need(kgg$down, "Load file to render DotPlot"),
+             need(rowsdown(), "Select the paths of interest to render dotPlot"))
     rowsdown <- rowsdown()
     if(is.null(rowsdown)){rowsdown <- c(1:20)}
     dotPlotkegg(kgg$down[rowsdown,], n = length(rowsdown))
   })
   # KEGG heatmap Down #################
   output$heatmapKeggDown <- renderPlotly({
-    validate(need(kgg$down, "Load file to render Heatmap"))
-    validate(need(rowsdown(), "Select the paths of interest to render Heatmap"))
+    validate(need(kgg$down, "Load file to render Heatmap"),
+             need(rowsdown(), "Select the paths of interest to render Heatmap"))
     #heatmapKegg(kggDT$down, rowsdown())
     heatmapKeggLogFC(kggDT$down, res$sh, rowsdown() ) 
   })
@@ -1443,14 +1445,14 @@ output$karyoPlot <- renderPlot({
     }
   })
   output$cnetKeggDown <- renderPlot({
-    validate(need(kgg$down, "Load file and select to render Net Plot"))
-    validate(need(rowsdown(), "Select the paths of interest to render NetPlot"))
+    validate(need(kgg$down, "Load file and select to render Net Plot"),
+             need(rowsdown(), "Select the paths of interest to render NetPlot"))
     customCnetKegg(kgg$down, rowsdown(), genesUp = data$genesUp, genesDown = data$genesDown)
   })
   output$visnetKeggDown <- renderVisNetwork({
-    validate(need(kgg$down, "Load file and select to render Net Plot"))
-    validate(need(rowsdown(), "Select the paths of interest to render NetPlot"))
-    validate(need(kggDT$down, ""))
+    validate(need(kgg$down, "Load file and select to render Net Plot"),
+             need(rowsdown(), "Select the paths of interest to render NetPlot"),
+             need(kggDT$down, ""))
     visData <- customVisNet(kgg$down, nTerm=rowsdown(), kggDT$down,
                              up = data$genesUp$SYMBOL, down = data$genesDown$SYMBOL )
     visNetwork(visData$nodes, visData$edges, background = "#ffffff") %>%
@@ -1495,8 +1497,8 @@ output$karyoPlot <- renderPlot({
   })
   # GO BP dotplot all ################### 
   output$BPDotall <- renderPlot({
-    validate(need(go$all, "Load file to render dotPlot"))
-    validate(need(bprowsall(), "Select the terms of interest to render DotPlot"))
+    validate(need(go$all, "Load file to render dotPlot"),
+             need(bprowsall(), "Select the terms of interest to render DotPlot"))
     bprowsall <- bprowsall()
     if(is.null(bprowsall)){bprowsall <- c(1:20)}
     gosBP <- go$all[go$all$Ont=="BP",]
@@ -1511,9 +1513,9 @@ output$karyoPlot <- renderPlot({
   })
   # GO circle BP all #####################
   output$goCircleAllBP <- renderPlot({
-    validate(need(go$all, "Load file to render dotPlot"))
-    validate(need(res$sh,""))
-    validate(need( bprowsall() , "Select at least 4 rows"))
+    validate(need(go$all, "Load file to render dotPlot"),
+             need(res$sh,""),
+             need( bprowsall() , "Select at least 4 rows"))
     bprowsall <- bprowsall()
     goall <- go$all[go$all$Ont=="BP", ]
     if(length(bprowsall)>=4){
@@ -1561,8 +1563,8 @@ output$karyoPlot <- renderPlot({
   })
   # GO MF dotplot all ################### 
   output$MFDotall <- renderPlot({
-    validate(need(go$all, "Load file to render dotPlot"))
-    validate(need(mfrowsall(), "Select the terms of interest to render DotPlot"))
+    validate(need(go$all, "Load file to render dotPlot"),
+             need(mfrowsall(), "Select the terms of interest to render DotPlot"))
     mfrowsall <- mfrowsall()
     if(is.null(mfrowsall)){mfrowsall <- c(1:20)}
     gosMF <- go$all[go$all$Ont=="MF",]
@@ -1577,9 +1579,9 @@ output$karyoPlot <- renderPlot({
   })
   # GO circle MF all #####################
   output$goCircleAllMF <- renderPlot({
-    validate(need(go$all, "Load file to render dotPlot"))
-    validate(need(res$sh,""))
-    validate(need( mfrowsall() , "Select at least 4 rows"))
+    validate(need(go$all, "Load file to render dotPlot"),
+             need(res$sh,""),
+             need( mfrowsall() , "Select at least 4 rows"))
     mfrowsall <- mfrowsall()
     goall <- go$all[go$all$Ont=="MF", ]
     if(length(mfrowsall)>=4){
@@ -1627,8 +1629,8 @@ output$karyoPlot <- renderPlot({
   })
   # GO CC dotplot all ################### 
   output$CCDotall <- renderPlot({
-    validate(need(go$all, "Load file to render dotPlot"))
-    validate(need(ccrowsall(), "Select the terms of interest to render DotPlot"))
+    validate(need(go$all, "Load file to render dotPlot"),
+             need(ccrowsall(), "Select the terms of interest to render DotPlot"))
     ccrowsall <- ccrowsall()
     if(is.null(ccrowsall)){ccrowsall <- c(1:20)}
     gosCC <- go$all[go$all$Ont=="CC",]
@@ -1643,9 +1645,9 @@ output$karyoPlot <- renderPlot({
   })
   # GO circle CC all #####################
   output$goCircleAllCC <- renderPlot({
-    validate(need(go$all, "Load file to render dotPlot"))
-    validate(need(res$sh,""))
-    validate(need( ccrowsall() , "Select at least 4 rows"))
+    validate(need(go$all, "Load file to render dotPlot"),
+             need(res$sh,""),
+             need( ccrowsall() , "Select at least 4 rows"))
     ccrowsall <- ccrowsall()
     goall <- go$all[go$all$Ont=="CC", ]
     if(length(ccrowsall)>=4){
@@ -1687,8 +1689,8 @@ output$karyoPlot <- renderPlot({
   })
   # GO BP dotplot up ################### 
   output$BPDotUp <- renderPlot({
-    validate(need(go$up, "Load file to render dotPlot"))
-    validate(need(bprowsup(), "Select the terms of interest to render DotPlot"))
+    validate(need(go$up, "Load file to render dotPlot"),
+             need(bprowsup(), "Select the terms of interest to render DotPlot"))
     bprowsup <- bprowsup()
     if(is.null(bprowsup)){bprowsup <- c(1:20)}
     gosBP <- go$up[go$up$Ont=="BP",]
@@ -1703,9 +1705,9 @@ output$karyoPlot <- renderPlot({
   })
     # GO circle BP Up #####################
   output$goCircleUpBP <- renderPlot({
-    validate(need(go$up, "Load file to render dotPlot"))
-    validate(need(res$sh,""))
-    validate(need( bprowsup() , "Select at least 4 rows"))
+    validate(need(go$up, "Load file to render dotPlot"),
+             need(res$sh,""),
+             need( bprowsup() , "Select at least 4 rows"))
     bprowsup <- bprowsup()
     if(length(bprowsup)>=4){
       circ <- data2circle(go=go$up[bprowsup, ], res=res$sh, genes=data$genesUp)
@@ -1748,8 +1750,8 @@ output$karyoPlot <- renderPlot({
   })
   # GO MF dotplot up ################### 
   output$MFDotUp <- renderPlot({
-    validate(need(go$up, "Load file to render dotPlot"))
-    validate(need(mfrowsup(), "Select the terms of interest to render DotPlot"))
+    validate(need(go$up, "Load file to render dotPlot"),
+             need(mfrowsup(), "Select the terms of interest to render DotPlot"))
     mfrowsup <- mfrowsup()
     if(is.null(mfrowsup)){mfrowsup <- c(1:20)}
     gosMF <- go$up[go$up$Ont=="MF",]
@@ -1764,9 +1766,9 @@ output$karyoPlot <- renderPlot({
   })
   # GO circle MF Up #####################
   output$goCircleUpMF <- renderPlot({
-    validate(need(go$up, "Load file to render dotPlot"))
-    validate(need(res$sh,""))
-    validate(need( mfrowsup() , "Select at least 4 rows"))
+    validate(need(go$up, "Load file to render dotPlot"),
+             need(res$sh,""),
+             need( mfrowsup() , "Select at least 4 rows"))
     mfrowsup <- mfrowsup()
     if(length(mfrowsup)>=4){
       circ <- data2circle(go=go$up[mfrowsup, ], res=res$sh, genes=data$genesUp)
@@ -1809,8 +1811,8 @@ output$karyoPlot <- renderPlot({
   })
   # GO CC dotplot up ################### 
   output$CCDotUp <- renderPlot({
-    validate(need(go$up, "Load file to render dotPlot"))
-    validate(need(ccrowsup(), "Select the terms of interest to render DotPlot"))
+    validate(need(go$up, "Load file to render dotPlot"),
+             need(ccrowsup(), "Select the terms of interest to render DotPlot"))
     ccrowsup <- ccrowsup()
     if(is.null(ccrowsup)){ccrowsup <- c(1:20)}
     gosCC <- go$up[go$up$Ont=="CC",]
@@ -1825,9 +1827,9 @@ output$karyoPlot <- renderPlot({
   })
   # GO circle CC Up #####################
   output$goCircleUpCC <- renderPlot({
-    validate(need(go$up, "Load file to render dotPlot"))
-    validate(need(res$sh,""))
-    validate(need( ccrowsup() , "Select at least 4 rows"))
+    validate(need(go$up, "Load file to render dotPlot"),
+             need(res$sh,""),
+             need( ccrowsup() , "Select at least 4 rows"))
     ccrowsup <- ccrowsup()
     if(length(ccrowsup)>=4){
       circ <- data2circle(go=go$up[ccrowsup, ], res=res$sh, genes=data$genesUp)
@@ -1869,8 +1871,8 @@ output$karyoPlot <- renderPlot({
   })
   # GO BP dotplot down ################### 
   output$BPDotDown <- renderPlot({
-    validate(need(go$down, "Load file to render dotPlot"))
-    validate(need(bprowsdown(), "Select the terms of interest to render DotPlot"))
+    validate(need(go$down, "Load file to render dotPlot"),
+             need(bprowsdown(), "Select the terms of interest to render DotPlot"))
     bprowsdown <- bprowsdown()
     if(is.null(bprowsdown)){bprowsdown <- c(1:20)}
     gosBP <- go$down[go$down$Ont=="BP",]
@@ -1885,9 +1887,9 @@ output$karyoPlot <- renderPlot({
   })
   # GO circle BP Down #####################
   output$goCircleDownBP <- renderPlot({
-    validate(need(go$down, "Load file to render dotPlot"))
-    validate(need(res$sh,""))
-    validate(need( bprowsdown() , "Select at least 4 rows"))
+    validate(need(go$down, "Load file to render dotPlot"),
+             need(res$sh,""),
+             need( bprowsdown() , "Select at least 4 rows"))
     bprowsdown <- bprowsdown()
     if(length(bprowsdown)>=4){
       circ <- data2circle(go=go$down[bprowsdown, ], res=res$sh, genes=data$genesDown)
@@ -1930,8 +1932,8 @@ output$karyoPlot <- renderPlot({
   })
   # GO MF dotplot down ################### 
   output$MFDotDown <- renderPlot({
-    validate(need(go$down, "Load file to render dotPlot"))
-    validate(need(mfrowsdown(), "Select the terms of interest to render DotPlot"))
+    validate(need(go$down, "Load file to render dotPlot"),
+             need(mfrowsdown(), "Select the terms of interest to render DotPlot"))
     mfrowsdown <- mfrowsdown()
     if(is.null(mfrowsdown)){mfrowsdown <- c(1:20)}
     gosMF <- go$down[go$down$Ont=="MF",]
@@ -1946,9 +1948,9 @@ output$karyoPlot <- renderPlot({
   })
   # GO circle MF Down #####################
   output$goCircleDownMF <- renderPlot({
-    validate(need(go$down, "Load file to render dotPlot"))
-    validate(need(res$sh,""))
-    validate(need( mfrowsdown() , "Select at least 4 rows"))
+    validate(need(go$down, "Load file to render dotPlot"),
+             need(res$sh,""),
+             need( mfrowsdown() , "Select at least 4 rows"))
     mfrowsdown <- mfrowsdown()
     if(length(mfrowsdown)>=4){
       circ <- data2circle(go=go$down[mfrowsdown, ], res=res$sh, genes=data$genesDown)
@@ -1991,8 +1993,8 @@ output$karyoPlot <- renderPlot({
   })
   # GO CC dotplot down ################### 
   output$CCDotDown <- renderPlot({
-    validate(need(go$down, "Load file to render dotPlot"))
-    validate(need(ccrowsdown(), "Select the terms of interest to render DotPlot"))
+    validate(need(go$down, "Load file to render dotPlot"),
+             need(ccrowsdown(), "Select the terms of interest to render DotPlot"))
     ccrowsdown <- ccrowsdown()
     if(is.null(ccrowsdown)){ccrowsdown <- c(1:20)}
     gosCC <- go$down[go$down$Ont=="CC",]
@@ -2007,9 +2009,9 @@ output$karyoPlot <- renderPlot({
   })
   # GO circle CC Down #####################
   output$goCircleDownCC <- renderPlot({
-    validate(need(go$down, "Load file to render dotPlot"))
-    validate(need(res$sh,""))
-    validate(need( ccrowsdown() , "Select at least 4 rows"))
+    validate(need(go$down, "Load file to render dotPlot"),
+             need(res$sh,""),
+             need( ccrowsdown() , "Select at least 4 rows"))
     ccrowsdown <- ccrowsdown()
     if(length(ccrowsdown)>=4){
       circ <- data2circle(go=go$down[ccrowsdown, ], res=res$sh, genes=data$genesDown)
@@ -2277,55 +2279,6 @@ output$karyoPlot <- renderPlot({
         envir = new.env(parent = globalenv( ))
       )
     } )
-  # output$reportpdf <- downloadHandler(
-  #   # For PDF output, change this to "report.pdf"
-  #   filename = "report.pdf",
-  #   content = function(file) {
-  #     tempReport <- file.path(tempdir(), "pdfReport.Rmd")
-  #     file.copy("pdfReport.Rmd", tempReport, overwrite = TRUE)
-  #     file.copy("utils.R", file.path(tempdir(),"utils.R"), overwrite = TRUE)
-  #     file.copy("tmpResources/", tempdir(), overwrite = TRUE, recursive = TRUE)
-  #     do.call(file.remove, list(list.files("tmpResources/", full.names = TRUE)))
-  #     nrall <- rowsAll()
-  #     nrup <- rowsUp()
-  #     nrdown <- rowsdown()
-  #     if(is.null(nrall)){nrall <- c(1:10)}
-  #     if(is.null(nrup)){nrup <- c(1:10)}
-  #     if(is.null(nrdown)){nrdown <- c(1:10)}
-  #     bpnrall <- bprowsall()
-  #     mfnrall <- mfrowsall()
-  #     ccnrall <- ccrowsall()
-  #     if(is.null(bpnrall)){bpnrall <- c(1:10)}
-  #     if(is.null(mfnrall)){mfnrall <- c(1:10)}
-  #     if(is.null(ccnrall)){ccnrall <- c(1:10)}
-  #     bpnrup <- bprowsup()
-  #     mfnrup <- mfrowsup()
-  #     ccnrup <- ccrowsup()
-  #     if(is.null(bpnrup)){bpnrup <- c(1:10)}
-  #     if(is.null(mfnrup)){mfnrup <- c(1:10)}
-  #     if(is.null(ccnrup)){ccnrup <- c(1:10)}
-  #     bpnrdown <- bprowsdown()
-  #     mfnrdown <- mfrowsdown()
-  #     ccnrdown <- ccrowsdown()
-  #     if(is.null(bpnrdown)){bpnrdown <- c(1:10)}
-  #     if(is.null(mfnrdown)){mfnrdown <- c(1:10)}
-  #     if(is.null(ccnrdown)){ccnrdown <- c(1:10)}
-  #     variablepca <- variables()
-  #     if(is.null(variablepca)){variablepca=NULL}
-  #     gseanr <- gsearow()
-  #     if(is.null(gseanr)){gseanr <- c(1)}
-  #     params <- list(nrup=nrup, nrdown=nrdown, bpnrup=bpnrup, bpnrdown=bpnrdown,
-  #                    mfnrup=mfnrup, mfnrdown=mfnrdown, ccnrup=ccnrup, ccnrdown=ccnrdown,
-  #                    variablepca=variablepca, tempdir =tempdir(),
-  #                    gseanr=gseanr, author=author(), nrall = nrall,
-  #                    bpnrall=bpnrall, mfnrall=mfnrall, ccnrall=ccnrall)
-  #     rmarkdown::render(
-  #       tempReport,
-  #       output_file = file,
-  #       params = params,
-  #       envir = new.env(parent = globalenv())
-  #     )
-  #   } )
 }
 
 
