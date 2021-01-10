@@ -68,7 +68,7 @@ unselectPopUpModal3 <- function(session){
         session = session,
         inputId = "modalGOAll",
         label = "Select elements to report GO All",
-        choices = c("Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
+        choices = c("WordCloud","Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
         selected = c(),
         status = "primary",
         checkIcon = list(
@@ -83,7 +83,7 @@ unselectPopUpModal3 <- function(session){
         session = session,
         inputId = "modalGOUp",
         label = "Select elements to report GO Up",
-        choices = c("Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
+        choices = c("WordCloud","Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
         selected = c(),
         status = "primary",
         checkIcon = list(
@@ -98,7 +98,7 @@ unselectPopUpModal3 <- function(session){
         session = session,
         inputId = "modalGODown",
         label = "Select elements to report GO Down",
-        choices = c("Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
+        choices = c("WordCloud","Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
         selected = c(),
         status = "primary",
         checkIcon = list(
@@ -199,8 +199,8 @@ selectPopUpModal3 <- function(session){
         session = session,
         inputId = "modalGOAll",
         label = "Select elements to report GO All",
-        choices = c("Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
-        selected = c("Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
+        choices = c("WordCloud","Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
+        selected = c("WordCloud","Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
         status = "primary",
         checkIcon = list(
             yes = icon("ok",
@@ -214,8 +214,8 @@ selectPopUpModal3 <- function(session){
         session = session,
         inputId = "modalGOUp",
         label = "Select elements to report GO Up",
-        choices = c("Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
-        selected = c("Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
+        choices = c("WordCloud","Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
+        selected = c("WordCloud","Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
         status = "primary",
         checkIcon = list(
             yes = icon("ok",
@@ -229,8 +229,8 @@ selectPopUpModal3 <- function(session){
         session = session,
         inputId = "modalGODown",
         label = "Select elements to report GO Down",
-        choices = c("Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
-        selected = c("Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
+        choices = c("WordCloud","Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
+        selected = c("WordCloud","Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
         status = "primary",
         checkIcon = list(
             yes = icon("ok",
@@ -280,8 +280,8 @@ selectPopUpModal1 <- function(session){
         session = session,
         inputId = "modalGOAll",
         label = "Select elements to report GO All",
-        choices = c("Table", "Barplot", "Dotplot"),
-        selected = c("Table", "Barplot", "Dotplot"),
+        choices = c("WordCloud","Table", "Barplot", "Dotplot"),
+        selected = c("WordCloud","Table", "Barplot", "Dotplot"),
         status = "primary",
         checkIcon = list(
             yes = icon("ok",
@@ -315,7 +315,7 @@ unselectPopUpModal1  <- function(session){
         session = session,
         inputId = "modalGOAll",
         label = "Select elements to report GO All",
-        choices = c("Table", "Barplot", "Dotplot"),
+        choices = c("WordCloud","Table", "Barplot", "Dotplot"),
         selected = c(),
         status = "primary",
         checkIcon = list(

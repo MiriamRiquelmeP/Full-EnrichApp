@@ -43,7 +43,9 @@ fluidPage(
                   status = "primary",
                   width = NULL,
                   bsAlert("gseaPlot"),
-                  plotOutput("gseaPlot")
+                  plotOutput("gseaPlot"),
+            fluidRow(column(width = 2,
+                            downloadButton("gseaButton","Download SVG") ))
               )
       )
     )

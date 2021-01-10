@@ -70,6 +70,9 @@ params:
   dotgodObj: NA
   gobargodObj: NA
   gocirclegodObj: NA
+  cloudgoaObj: NA
+  cloudgouObj: NA
+  cloudgodObj: NA
   goall: NA
   godtall: NA
   goup: NA
@@ -297,7 +300,8 @@ cat("## Chorplot All genes")
 ```
 
 ```{r chorkgaplot, eval = params$chorkgaObj}
-chordPlotReport(params$kggall[params$nrowsall, ], nRows = length(params$nrowsall), orderby = "P.DE")
+#chordPlotReport(params$kggall[params$nrowsall, ], nRows = length(params$nrowsall), orderby = "P.DE")
+mychordplot(params$kggall[params$nrowsall,  c("Pathway","genes")], div = "chordplotall", elementId = "chordplotall")
 ```
 
 ```{r eval = params$chorkgaObj, fig.height=3}
@@ -384,7 +388,8 @@ cat("## Chorplot Up genes")
 ```
 
 ```{r chorkguplot, eval = params$chorkguObj}
-chordPlotReport(params$kggup[params$nrowsup, ], nRows = length(params$nrowsup), orderby = "P.DE")
+#chordPlotReport(params$kggup[params$nrowsup, ], nRows = length(params$nrowsup), orderby = "P.DE")
+mychordplot(params$kggup[params$nrowsup,  c("Pathway","genes")], div = "chordplotup", elementId = "chordplotup")
 legendChorplotReport(params$kggup[params$nrowsup, ] )
 ```
 
@@ -469,7 +474,8 @@ cat("## Chorplot Down genes")
 ```
 
 ```{r chorkgdownlot, eval = params$chorkgdObj}
-chordPlotReport(params$kggdown[params$nrowsdown, ], nRows = length(params$nrowsdown), orderby = "P.DE")
+#chordPlotReport(params$kggdown[params$nrowsdown, ], nRows = length(params$nrowsdown), orderby = "P.DE")
+mychordplot(params$kggdown[params$nrowsdown,  c("Pathway","genes")], div = "chordplotdown", elementId =  "chordplotdown")
 legendChorplotReport(params$kggdown[params$nrowsdown, ] )
 ```
 
@@ -536,6 +542,16 @@ goDT <- params$godtall
                  pageLength = 10, white_space = "normal",
                  buttons = customButtons))
 ```
+
+```{r eval = params$cloudgoaObj, results='asis'}
+cat("## WordCloud GO BP all genes")
+```
+
+```{r eval=params$cloudgoaObj, fig.width=10, fig.height=7}
+goall <- params$goall[params$goall$Ont=="BP", ]
+myggwordcloudReport(goall)
+```
+
 
 ```{r eval = params$bargoaObj, results='asis' }
 cat("## Bar plot GO BP all genes ")
@@ -635,6 +651,17 @@ goDT <- params$godtall
                  buttons = customButtons))
 ```
 
+```{r eval = params$cloudgoaObj, results='asis'}
+cat("## WordCloud GO MF all genes")
+```
+
+```{r eval=params$cloudgoaObj, fig.width=10, fig.height=7}
+goall <- params$goall[params$goall$Ont=="MF", ]
+myggwordcloudReport(goall)
+```
+
+
+
 ```{r eval = params$bargoaObj, results='asis' }
 cat("## Bar plot GO MF all genes ")
 ```
@@ -732,6 +759,16 @@ goDT <- params$godtall
                  pageLength = 10, white_space = "normal",
                  buttons = customButtons))
 ```
+
+```{r eval = params$cloudgoaObj, results='asis'}
+cat("## WordCloud GO CC all genes")
+```
+
+```{r eval=params$cloudgoaObj, fig.width=10, fig.height=7}
+goall <- params$goall[params$goall$Ont=="CC", ]
+myggwordcloudReport(goall)
+```
+
 
 ```{r eval = params$bargoaObj, results='asis' }
 cat("## Bar plot GO CC all genes ")
@@ -833,6 +870,16 @@ cat("## GO BP up genes table")
                            buttons = customButtons))
 ```
 
+```{r eval = params$cloudgouObj, results='asis'}
+cat("## WordCloud GO BP up genes")
+```
+
+```{r eval=params$cloudgouObj, fig.width=10, fig.height=7}
+goup <- params$goup[params$goup$Ont=="BP", ]
+myggwordcloudReport(goup)
+```
+
+
 ```{r eval = params$bargouObj, results='asis'}
 cat("## Barplot BP Up genes")
 ```
@@ -920,6 +967,16 @@ cat("## GO MF up genes table")
                            buttons = customButtons))
 ```
 
+```{r eval = params$cloudgouObj, results='asis'}
+cat("## WordCloud GO MF up genes")
+```
+
+```{r eval=params$cloudgouObj, fig.width=10, fig.height=7}
+goup <- params$goup[params$goup$Ont=="MF", ]
+myggwordcloudReport(goup)
+```
+
+
 ```{r eval = params$bargouObj, results='asis'}
 cat("## Barplot MF Up genes")
 ```
@@ -1005,6 +1062,16 @@ cat("## GO CC up genes table")
                            pageLength = 10, white_space = "normal",
                            buttons = customButtons))
 ```
+
+```{r eval = params$cloudgouObj, results='asis'}
+cat("## WordCloud GO CC up genes")
+```
+
+```{r eval=params$cloudgouObj, fig.width=10, fig.height=7}
+goup <- params$goup[params$goup$Ont=="CC", ]
+myggwordcloudReport(goup)
+```
+
 
 ```{r eval = params$bargouObj, results='asis'}
 cat("## Barplot CC Up genes")
@@ -1097,6 +1164,16 @@ cat("## GO BP down genes table")
                            buttons = customButtons))
 ```
 
+```{r eval = params$cloudgodObj, results='asis'}
+cat("## WordCloud GO BP down genes")
+```
+
+```{r eval=params$cloudgodObj, fig.width=10, fig.height=7}
+godown <- params$godown[params$godown$Ont=="BP", ]
+myggwordcloudReport(godown)
+```
+
+
 ```{r eval = params$bargodObj, results='asis'}
 cat("## Barplot BP Down genes")
 ```
@@ -1185,6 +1262,16 @@ cat("## GO MF down genes table")
                            buttons = customButtons))
 ```
 
+
+```{r eval = params$cloudgodObj, results='asis'}
+cat("## WordCloud GO MF down genes")
+```
+
+```{r eval=params$cloudgodObj, fig.width=10, fig.height=7}
+godown <- params$godown[params$godown$Ont=="MF", ]
+myggwordcloudReport(godown)
+```
+
 ```{r eval = params$bargodObj, results='asis'}
 cat("## Barplot MF Down genes")
 ```
@@ -1269,6 +1356,16 @@ cat("## GO CC down genes table")
                opts = list(order = list(list(6, 'asc')),
                            pageLength = 10, white_space = "normal",
                            buttons = customButtons))
+```
+
+
+```{r eval = params$cloudgodObj, results='asis'}
+cat("## WordCloud GO CC down genes")
+```
+
+```{r eval=params$cloudgodObj, fig.width=10, fig.height=7}
+godown <- params$godown[params$godown$Ont=="CC", ]
+myggwordcloudReport(godown)
 ```
 
 ```{r eval = params$bargodObj, results='asis'}

@@ -897,7 +897,7 @@ plotGOAll <- function(enrichdf, nrows = 30, orderby="p-val",
         scale_fill_manual(values = colorfill) +
         theme(panel.grid.major.y  = element_blank(),
               axis.title.y = element_blank())
-    r <- r %>% plotly::ggplotly(tooltip = "all")
+    #r <- r %>% plotly::ggplotly(tooltip = "all")
     p <- ggplot(df, aes(fill = Regulation, y = DEG, x = goId,
                         text =paste0("p-val: ",format(p_val, scientific = T, digits = 4)) )) +
         geom_bar(position = "dodge", stat = "identity") + coord_flip() +
@@ -905,7 +905,7 @@ plotGOAll <- function(enrichdf, nrows = 30, orderby="p-val",
         scale_fill_manual(values = colorfill) +
         theme(panel.grid.major.y  = element_blank(),
               axis.title.y = element_blank())
-    p <- p %>% ggplotly(tooltip = "all")
+    #p <- p %>% ggplotly(tooltip = "all")
     q <- ggplot(df, aes(fill = Regulation, y = DEG, x = goId,
                         text =paste0("p-val: ",format(p_val, scientific = T, digits = 4)) )) +
         geom_bar(position = "stack", stat = "identity") + coord_flip() +
@@ -913,7 +913,7 @@ plotGOAll <- function(enrichdf, nrows = 30, orderby="p-val",
         scale_fill_manual(values = colorfill) +
         theme(panel.grid.major.y  = element_blank(),
               axis.title.y = element_blank())
-    q <- q %>% ggplotly(tooltip = "all")
+    #q <- q %>% ggplotly(tooltip = "all")
     return(list(p,q,r) ) 
 }
 
@@ -932,15 +932,24 @@ plotKegg <- function(enrichdf, nrows = 30, orderby="p-val", colors = NULL){
         } else{ enrichdf <- enrichdf %>% arrange(desc(get(orderby)))}
     }
     enrichdf <- enrichdf[1:nrows,]
+        ## generar ggplot
+    ggp <- enrichdf %>% ggplot(aes(x=DEG, y=pathID, fill=colors))+
+        geom_bar(stat = "identity", position = "identity") +
+        theme(axis.text.y = element_text(angle = 0, hjust = 1)) + theme_bw() +
+        scale_fill_manual(values = colors) +
+        theme(panel.grid.major.y  = element_blank(),
+              axis.title.y = element_blank(), legend.position = "none")
+        ## generar ggplotly
     p <- enrichdf %>%
         plot_ly(x=~DEG, y=~pathID, text=~Pathway, type = "bar",
                 marker = list(color=colors),
                 orientation = "v",
-                hovertext = paste0(enrichdf$Pathway,"\np-val: ",format(enrichdf$`p-val`, scientific = T, digits = 4))) %>%
+                hovertext = paste0(enrichdf$Pathway,"\np-val: ",format(enrichdf$`p-val`, 
+                                                                       scientific = T, digits = 4))) %>%
         layout(margin = list(l=100), yaxis = list(title=""),
                title="Kegg pathways", xaxis = list(tickvals = c(1:max(enrichdf$DEG) ) ) )
         
-    return(p)
+    return(list(p,ggp))
 }
 
 # Plot barras de KeggALL ###################
@@ -982,7 +991,7 @@ plotKeggAll <- function(enrichdf, nrows = 10, orderby = "p-val",
         scale_fill_manual(values = colorfill) +
         theme(panel.grid.major.y  = element_blank(),
               axis.title.y = element_blank())
-    r <- r %>% plotly::ggplotly(tooltip = "all" )
+    #r <- r %>% plotly::ggplotly(tooltip = "all" )
     p <- ggplot(df, aes(fill = Regulation, y = DEG, x = pathId,
                         text =paste0("p-val: ",format(p_val, scientific = T, digits = 4)) )) +
         geom_bar(position = "dodge", stat = "identity") + coord_flip() +
@@ -990,7 +999,7 @@ plotKeggAll <- function(enrichdf, nrows = 10, orderby = "p-val",
         scale_fill_manual(values = colorfill) +
         theme(panel.grid.major.y  = element_blank(),
               axis.title.y = element_blank())
-    p <- p %>% ggplotly(tooltip = "all")
+    #p <- p %>% ggplotly(tooltip = "all")
     q <- ggplot(df, aes(fill = Regulation, y = DEG, x = pathId, 
                         text =paste0("p-val: ",format(p_val, scientific = T, digits = 4)) )) +
         geom_bar(position = "stack", stat = "identity") + coord_flip() +
@@ -998,7 +1007,7 @@ plotKeggAll <- function(enrichdf, nrows = 10, orderby = "p-val",
         scale_fill_manual(values = colorfill) +
         theme(panel.grid.major.y  = element_blank(),
               axis.title.y = element_blank())
-    q <- q %>% ggplotly(tooltip = "all")
+    #q <- q %>% ggplotly(tooltip = "all")
 
     return(list(p, q, r))
 }
@@ -1280,7 +1289,7 @@ heatmapKeggLogFC <- function(kdt, res, nr){
     xNum <- length(unique(kdt$genes))
     if(xNum <=60){xSize=8}else if(xNum>60 | yNum <=80){xSize=7}else{xSize=0}
     
-    kk3 %>% ggplot(aes_(~genes, ~Pathway)) + 
+    p <- kk3 %>% ggplot(aes_(~genes, ~Pathway)) + 
     geom_tile(aes_(fill = ~log2FoldChange, label= ~padj), color = 'black', size =0.2) +
     xlab(NULL) + ylab(NULL) +
     theme_minimal() +
@@ -1290,6 +1299,7 @@ heatmapKeggLogFC <- function(kdt, res, nr){
     # scale_fill_brewer(palette = "YlOrRd")
     # scale_fill_manual(values = getPalette(colourCount))+
     theme(text = element_text(size=ySize, angle=0), plot.margin = unit(c(15,25,15,15), "pt"))
+    return(p)
 }
 
 # Función para crear dataset para hacer GSEA pathway ##################
@@ -1980,7 +1990,7 @@ heat <- function (vsd, n = 40, intgroup = "AAV", sampleName = "condition",
 }
 ## New heatmap plotly
 heat2 <- function (vsd, n = 40, intgroup = NULL, sampleName = NULL,
-                      specie="Mm", customColor = NULL ) 
+                      specie="Mm", customColor = NULL, ggplt = FALSE ) 
     {
       require("EnsDb.Mmusculus.v79")
       require("org.Mm.eg.db")
@@ -2041,14 +2051,19 @@ heat2 <- function (vsd, n = 40, intgroup = NULL, sampleName = NULL,
     ch <- sizesDf$ch[ nrow(mat) ]
     fsr <- sizesDf$fsr[ nrow(mat) ]
     if(nrow(mat)>80){labrow = rep(NA, nrow(mat))}else{labrow = as.character(consensus$Symbol)}
-    heatmaply(mat, labRow = labrow, col_side_colors = df,
+    if(!isTRUE(ggplt)){
+      heatmaply(mat, labRow = labrow, col_side_colors = df,
+                col_side_palette = ann, labCol = as.character(vsd[[sampleName]] ), fontsize_row = fsr,
+                margins = c(50,50,20,0))}
+    else{
+      ggheatmap(mat, labRow = labrow, col_side_colors = df,
               col_side_palette = ann, labCol = as.character(vsd[[sampleName]] ), fontsize_row = fsr,
-              margins = c(50,50,20,0)  )
+              margins = c(50,50,20,0) )}
 }
 
 # cluster #############
 
-cluster <- function(vsd, intgroup = "condition")
+cluster <- function(vsd, intgroup = "condition", ggplt = FALSE)
   {
   #vsd <- vst(data)
   sampleDists_vsd <- dist(t(assay(vsd)))
@@ -2056,7 +2071,11 @@ cluster <- function(vsd, intgroup = "condition")
   rownames(sampleDistMatrix_vsd) <- vsd[[intgroup]]
   colnames(sampleDistMatrix_vsd) <- vsd[[intgroup]]
   colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
-  heatmaply(sampleDistMatrix_vsd, colors = colors, margins = c(50,50,50,0)  )
+  if(!isTRUE(ggplt)){
+    heatmaply(sampleDistMatrix_vsd, colors = colors, margins = c(50,50,50,0)  )
+  }else{
+    ggheatmap(sampleDistMatrix_vsd, colors = colors, margins = c(50,50,50,0)  )  
+    }
   # pheatmap(sampleDistMatrix_vsd,
   #          clustering_distance_rows = sampleDists_vsd,
   #          clustering_distance_cols = sampleDists_vsd,
@@ -2830,3 +2849,21 @@ visnetLegend <- function(kggDT = NULL, rows = NULL){
         )
       )
     }
+## myggwordcloud ############################
+myggwordcloud <- function(data, bg="white"){
+  df <- data
+  text_df <- tibble( text = paste0( df$Term, collapse = " "), line = 1)
+  unigrama <- text_df %>% 
+    unnest_tokens(input = text, output = bigram, token = "ngrams", n = 1 )
+  counter <- unigrama %>% 
+    dplyr::count(bigram, sort = TRUE)
+  letras <- c(letters, LETTERS)
+  bigram_filter <- counter %>% 
+    filter(!bigram %in% stop_words$word) %>% 
+    filter(!bigram %in% letras)
+  bigram_filter <- bigram_filter[ - which(!is.na(extract_numeric(bigram_filter$bigram))  ) ,]
+  par(bg=bg)
+  wordcloud::wordcloud(bigram_filter$bigram, bigram_filter$n, random.order = F, random.color = T,
+                       min.freq = 2, max.words = 200, scale = c(6,1),
+                       colors = distinctColorPalette(length(unique(bigram_filter$n))) )
+}

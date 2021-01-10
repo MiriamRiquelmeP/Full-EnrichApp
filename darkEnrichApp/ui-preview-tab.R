@@ -127,7 +127,8 @@ fluidPage(
                                      tagList(fluidRow(
                                      column(width=3,
                                         materialSwitch(inputId = "pca3d", label = "PCA 3D",
-                                                       status = "primary")
+                                                       status = "primary"),
+                                        downloadButton("downPCA","Download SVG")
                                             ),
                                      column(width=9,
                                         uiOutput("pca3", height = "800px")
@@ -153,7 +154,8 @@ fluidPage(
                                      tagList(fluidRow(
                                      column(width=3,
                                         materialSwitch(inputId = "boxplotswitch", label = "Violin plot",
-                                                       status = "primary")
+                                                       status = "primary"),
+                                        downloadButton("downViolin","Download SVG")
                                             ),
                                      column(width=9,
                                         plotlyOutput("boxviolin", width="100%", height = "800px")
@@ -186,7 +188,8 @@ fluidPage(
                                                 max = 120,
                                                 value = 20,
                                                 step = 1
-                                              )
+                                              ),
+                                              downloadButton("downHeat","Download SVG")
                                             ),
                                             column(width = 9,
                                                    plotlyOutput("heat", height = "800px"))
@@ -206,7 +209,10 @@ fluidPage(
                                         trigger = "hover",
                                         placement = "right"
                                       ),
-                                      plotlyOutput("cluster", width = "100%", height = "800px")
+                                      downloadButton("downCluster","Download SVG"),
+                                      fluidRow(column(width = 12,
+                                        plotlyOutput("cluster", width = "100%", height = "800px"))
+                                        )
                                  ),
                                  tabPanel(title = "Top 6 genes",
                                           circleButton(
@@ -222,7 +228,10 @@ fluidPage(
                                             trigger = "hover",
                                             placement = "right"
                                           ),
-                                          plotlyOutput("top6", width="100%", height = "800px")),
+                                          downloadButton("downTopsix","Download SVG"),
+                                          fluidRow(column(width = 12,
+                                          plotlyOutput("top6", width="100%", height = "800px")))
+                                          ),
                                  tabPanel(title = "Top unique gene",
                                           circleButton(
                                             inputId = "information100",
@@ -242,7 +251,8 @@ fluidPage(
                                             column(
                                               width = 3,
                                               textInput("gene", value="", label = "Select gene name of interest"),
-                                              htmlOutput("top1text")
+                                              htmlOutput("top1text"),
+                                              downloadButton("downTopone","Download SVG")
                                             ),
                                             column(width = 9,
                                                    plotlyOutput("top1", height = "800px"))
@@ -263,7 +273,8 @@ fluidPage(
                                           tagList(
                                             fluidRow(
                                               column(width=10, offset=1,
-                                                     plotOutput("karyoPlot", height = "800px") )))
+                                                     plotOutput("karyoPlot", height = "800px") )),
+                                            downloadButton("downKrpt","Download PNG"))
                                           )
                                  )
                              )
@@ -274,58 +285,6 @@ fluidPage(
                   width = NULL,
                 tagList(
                     tags$p("Volcano & MA plots color scheme"),
-             #    spectrumInput(
-             #     inputId = "logfcColor",
-             #     label = "Pick log FC color:",
-             #     selected = '#2ca25f',
-             #     width = "60%",
-             #     choices = list(
-             #         list("#b30000","#e34a33","#fc8d59","#fdbb84","#fdd49e","#fef0d9"),
-             #         list('#045a8d','#2b8cbe','#74a9cf','#a6bddb','#d0d1e6','#f1eef6'),
-             #         list('#006d2c', '#2ca25f', '#66c2a4', '#99d8c9', '#ccece6','#edf8fb'),
-             #         list('#252525', '#636363', '#969696', '#bdbdbd', '#d9d9d9', '#f7f7f7')
-             #     ),
-             #     options = list(`toggle-palette-more-text` = "Show more")
-             # ),
-             #              spectrumInput(
-             #     inputId = "padjColor",
-             #     label = "Pick p-val color:",
-             #     selected = '#2b8cbe',
-             #     width = "60%",
-             #     choices = list(
-             #         list("#b30000","#e34a33","#fc8d59","#fdbb84","#fdd49e","#fef0d9"),
-             #         list('#045a8d','#2b8cbe','#74a9cf','#a6bddb','#d0d1e6','#f1eef6'),
-             #         list('#006d2c', '#2ca25f', '#66c2a4', '#99d8c9', '#ccece6','#edf8fb'),
-             #         list('#252525', '#636363', '#969696', '#bdbdbd', '#d9d9d9', '#f7f7f7')
-             #     ),
-             #     options = list(`toggle-palette-more-text` = "Show more")
-             # ),
-             #              spectrumInput(
-             #     inputId = "bothColor",
-             #     label = "Pick logFC & p-pval color:",
-             #     selected = "#e34a33",
-             #     width = "60%",
-             #     choices = list(
-             #         list("#b30000","#e34a33","#fc8d59","#fdbb84","#fdd49e","#fef0d9"),
-             #         list('#045a8d','#2b8cbe','#74a9cf','#a6bddb','#d0d1e6','#f1eef6'),
-             #         list('#006d2c', '#2ca25f', '#66c2a4', '#99d8c9', '#ccece6','#edf8fb'),
-             #         list('#252525', '#636363', '#969696', '#bdbdbd', '#d9d9d9', '#f7f7f7')
-             #     ),
-             #     options = list(`toggle-palette-more-text` = "Show more")
-             # ),
-             #              spectrumInput(
-             #     inputId = "nsColor",
-             #     label = "Pick no significant color:",
-             #     selected = '#969696',
-             #     width = "60%",
-             #     choices = list(
-             #         list("#b30000","#e34a33","#fc8d59","#fdbb84","#fdd49e","#fef0d9"),
-             #         list('#045a8d','#2b8cbe','#74a9cf','#a6bddb','#d0d1e6','#f1eef6'),
-             #         list('#006d2c', '#2ca25f', '#66c2a4', '#99d8c9', '#ccece6','#edf8fb'),
-             #         list('#252525', '#636363', '#969696', '#bdbdbd', '#d9d9d9', '#f7f7f7')
-             #     ),
-             #     options = list(`toggle-palette-more-text` = "Show more")
-             # ),
              spectrumInput(
                  inputId = "upColor",
                  label = "Pick upregulated color:",
@@ -381,7 +340,8 @@ fluidPage(
                 ),
                 
                 plotOutput("volcano", click = "plot_click1" , width = "100%", height = "600px"),
-                tableOutput("texto1")
+                column(width=8,tableOutput("texto1")),
+                column(width = 4,downloadButton("downVolcano","Download SVG"))
             ),
          tabPanel(
                 title = "MA plot",
@@ -401,7 +361,8 @@ fluidPage(
                 ),
                 
                   plotOutput("MA", click = "plot_click2" , width = "100%", height = "600px"),
-                  tableOutput("texto2")
+                  column(width=8,tableOutput("texto2")),
+                  column(width = 4, downloadButton("MAdownload","Download SVG"))
             )
  ))),
  fluidRow(column(width = 4, offset = 4,

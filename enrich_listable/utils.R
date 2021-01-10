@@ -2914,3 +2914,21 @@ popupModal1 <- function() {
         )
       )
     }
+## myggwordcloud ############################
+myggwordcloud <- function(data, bg="white"){
+  df <- data
+  text_df <- tibble( text = paste0( df$Term, collapse = " "), line = 1)
+  unigrama <- text_df %>% 
+    unnest_tokens(input = text, output = bigram, token = "ngrams", n = 1 )
+  counter <- unigrama %>% 
+    dplyr::count(bigram, sort = TRUE)
+  letras <- c(letters, LETTERS)
+  bigram_filter <- counter %>% 
+    filter(!bigram %in% stop_words$word) %>% 
+    filter(!bigram %in% letras)
+  bigram_filter <- bigram_filter[ - which(!is.na(extract_numeric(bigram_filter$bigram))  ) ,]
+  par(bg=bg)
+  wordcloud::wordcloud(bigram_filter$bigram, bigram_filter$n, random.order = F, random.color = T,
+                       min.freq = 2, max.words = 200, scale = c(6,1),
+                       colors = distinctColorPalette(length(unique(bigram_filter$n))) )
+}

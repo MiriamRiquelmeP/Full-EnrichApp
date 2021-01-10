@@ -34,6 +34,11 @@ library(shinybusy)
 library(visNetwork)
 library(ggrepel)
 library(mychordplot)
+library(tidytext)
+library(wordcloud)
+library(randomcoloR)
+library(grid)
+library(gridExtra)
 source("utils.R")
 source("updatepopModals.R")
 options(shiny.maxRequestSize = 3000*1024^2)
@@ -42,6 +47,9 @@ options(shiny.maxRequestSize = 3000*1024^2)
 header <- dashboardHeader(title = "RNAseq viewer and report App", 
                           titleWidth = 300, 
                           dropdownMenuOutput("messageMenu"),
+                          tags$li(class="dropdown", actionButton("moreinfo","Tutorial",
+                                                                 style = "background-color: #8ec4d9"),
+                                  style="margin-top:8px; margin-right: 5px"),
                           tags$li(class="dropdown", actionButton("notesButton","Notes"),
                                   style="margin-top:8px; margin-right: 5px"),
                           tags$li(class = "dropdown", actionButton("aboutButton", "About"),
@@ -197,7 +205,8 @@ body <- dashboardBody(
                     )$value)
   ), # fin tab items
     bsModal("modalNotes", "Notes", "notesButton",size="large",
-          textAreaInput("textNotes", "Text Notes", width = "850px", height = "575px"))
+          textAreaInput("textNotes", "Comments", width = "850px", height = "575px", placeholder = "Input comments about your analysis here. What you write will be incorporated into the report. Markdown notation is accepted.\n
+In order to avoid creating first level sections, please use double or triple # to define a section instead of a single #" ))
 )# fin dashboardbody
 
 ########################################## UI #################################################
@@ -229,6 +238,15 @@ server <- function(input, output, session) {
     session$reload()
   })
   
+  observeEvent(input$moreinfo,{
+    showModal(
+      modalDialog(
+        size="l",
+        tags$iframe(src="pres1.html",  width="850px", height="700px")
+      )
+    )
+  })
+  
 # Definir reactiveVariables globales ##############
   coloresPCA <- reactiveValues(niveles=NULL, numNiveles=NULL)
   countdata <- reactiveValues() # para convertir count matrix y sample data
@@ -248,6 +266,7 @@ server <- function(input, output, session) {
   validateCountData <- reactiveValues(ok=FALSE) #para validar count y sample ok
   vals <- reactiveValues()
   vsd <- reactiveValues()
+  svg <- reactiveValues()
   
   observeEvent(input$deseqFile, {
       datos$dds <- readRDS(input$deseqFile$datapath)
@@ -972,7 +991,7 @@ output$pca <- renderPlotly({
              need(variables(), "Select condition to render PCA"),
              need(samplename(), ""),
              need(coloresPCA$colores(), ""))
-    plotPCA(
+    p <- plotPCA(
         rlog$datos,
         intgroup = variables(),
         labels = samplename(),
@@ -981,7 +1000,15 @@ output$pca <- renderPlotly({
         theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm")) +
         scale_size_manual(values = 3) +
         theme(text = element_text(size = 16))
+    svg$pca <- p
+    print(p)
 })
+
+output$downPCA <- downloadHandler(
+  filename = "pca.svg",
+  content = function(file){
+    ggsave(file, svg$pca, "svg", units = "in", width = 10, height = 10)}
+)
 
 output$pca3d <- renderRglwidget({
     validate(need(datos$dds, ""),
@@ -1010,7 +1037,7 @@ output$pca3d <- renderRglwidget({
     validate(need(res$sh, "Load file to render plot"))
     res <-  res$sh
     #res$`-log10padj` <- (-log10(res$padj)) 
-    CustomVolcano(res, lab = as.character(res$GeneName_Symbol),
+    svg$volcano <- CustomVolcano(res, lab = as.character(res$GeneName_Symbol),
                   selectLab = genesVolcano(),
                     x = 'log2FoldChange',
                     y = 'padj',
@@ -1020,10 +1047,16 @@ output$pca3d <- renderRglwidget({
                     drawConnectors=TRUE,
                     #xlim = c(-8, 8),
                     col = c("gray", "#7cccc3", "#d99c01", input$upColor, input$downColor))
+    svg$volcano
     })
     #volcany(res$sh, padj=padj(), fcdown=logfc()[1], fcup=logfc()[2],
     #        col=c(input$upColor, input$downColor), genes=genesVolcano() )
-  
+output$downVolcano <- downloadHandler(
+  filename = "volcano.svg",
+  content = function(file){
+    ggsave(file, svg$volcano, "svg", units = "in", width = 12, height = 7)}
+)
+
 xy <- reactive({
   res <- res$sh
   res$`-log10padj` <- (-log10(res$padj)) 
@@ -1039,7 +1072,8 @@ output$texto1 <- renderTable( digits = -2, {
     #validate(need(datos$dds, ""))
     validate(need(res$sh, "Load file to render plot"),
              need(logfc(), ""))
-    MA(res$sh, main = 'MA plot applying the DESeq2 Shrinkage normalization for Foldchange',
+    svg$maplot <- MA(res$sh, 
+                 main = 'MA plot applying the DESeq2 Shrinkage normalization for Foldchange',
        fdr = padj(), fcDOWN = logfc()[1], fcUP = logfc()[2] , size = 1.5,
        palette = c(input$upColor, input$downColor, "gray"),
        genenames = res$sh$GeneName_Symbol,
@@ -1051,8 +1085,14 @@ output$texto1 <- renderTable( digits = -2, {
        ggtheme = theme_classic(),
        usergenes = genesVolcano()
     )
+    svg$maplot
   })
 
+output$MAdownload <- downloadHandler(
+  filename = "ma.svg",
+  content = function(file){
+    ggsave(file, svg$maplot, "svg", units = "in", width = 12, height = 7)}
+)
 clicked <- reactive({
   res <- res$sh
   res$`log2(mean - 1)` <- log2(res$baseMean + 1)
@@ -1070,9 +1110,19 @@ output$texto2 <- renderTable( digits = -2, {
              need(vsd$data, "Load file to render plot"),
              need(variables(),"Load condition to render plot" ),
              need(samplename(),"Load condition to render plot" ) )
-    heat2(vsd$data, n=numheatmap(), intgroup = variables(), sampleName = samplename(),
+    p <- heat2(vsd$data, n=numheatmap(), intgroup = variables(), sampleName = samplename(),
          specie=specie(), customColor = coloresPCA$colores() )
+    q <- heat2(vsd$data, n=numheatmap(), intgroup = variables(), sampleName = samplename(),
+               specie=specie(), customColor = coloresPCA$colores(), ggplt = TRUE )
+    svg$heat <- q
+    print(p)
   })
+
+output$downHeat <- downloadHandler(
+  filename = "heat.svg",
+  content = function(file){
+    ggsave(file, svg$heat, "svg", units = "in", width = 10, height = 10)}
+)
   # view CLUSTER data ###################
   output$cluster <- renderPlotly( {
     validate(
@@ -1081,8 +1131,18 @@ output$texto2 <- renderTable( digits = -2, {
       need(variables(), "Load condition to render plot"),
       need(samplename(), "Load condition to render plot")
     )
-    cluster(vsd$data, intgroup = samplename())
+    p <- cluster(vsd$data, intgroup = samplename())
+    q <- cluster(vsd$data, intgroup = samplename(), ggplt=TRUE)
+    svg$cluster <- q
+    print(p)
   })
+
+output$downCluster <- downloadHandler(
+  filename = "cluster.svg",
+  content = function(file){
+    ggsave(file, svg$cluster, "svg", units = "in", width = 10, height = 10)}
+)
+
 # view TOP6 data ###################
   output$top6 <- renderPlotly( {
     validate(need(datos$dds, ""),
@@ -1105,8 +1165,15 @@ output$texto2 <- renderTable( digits = -2, {
       geom_point(position = position_jitter(width = 0.1, height = 0), size = 2) +
       facet_wrap(~symbol) + scale_color_manual( values = coloresPCA$colores() ) +
       ggtitle("Expression of top 6 most significant genes")
+    svg$topsix <- p
     p %>% ggplotly(tooltip = c("x","y","text"))
     })
+
+output$downTopsix <- downloadHandler(
+  filename = "topsix.svg",
+  content = function(file){
+    ggsave(file, svg$topsix, "svg", units = "in", width = 10, height = 10)}
+)
 # view TOP1 data ###################  
   output$top1 <- renderPlotly( {
     validate(need(datos$dds, ""),
@@ -1147,15 +1214,30 @@ output$texto2 <- renderTable( digits = -2, {
         txt <- gsub("\n","<br/>",txt)
         tags$h5(HTML(txt))
     })
+    svg$topone <- p
     p %>% ggplotly(tooltip = c("x","y","text"))
   })
+
+output$downTopone <- downloadHandler(
+  filename = "topone.svg",
+  content = function(file){
+    ggsave(file, svg$topone, "svg", units = "in", width = 10, height = 10)}
+)
 ## karyoplot ######################################
 output$karyoPlot <- renderPlot({
     validate(need(res$sh, "Load file to render plot"))
     krtp(res$sh, specie = specie(), pval = padj(), fcdown = logfc()[1],
          fcup = logfc()[2], bg="#46505a", coldown="#4ADBFF" , colup="#f7665c")
 })
-
+output$downKrpt <- downloadHandler(
+  filename = "karyoplot.png",
+  content = function(file){
+    png(file)
+    krtp(res$sh, specie = specie(), pval = padj(), fcdown = logfc()[1],
+         fcup = logfc()[2], bg="#46505a", coldown="#4ADBFF" , colup="#f7665c")
+    dev.off()
+  }
+)
  # Boxviolin plot #################################
   output$boxviolin <- renderPlotly({
           validate(need(datos$dds, "Load file and condition to render Volcano"),
@@ -1164,11 +1246,27 @@ output$karyoPlot <- renderPlot({
                    need(variables(), ""),
                    need(samplename(),"" ),
                    need(coloresPCA$colores(), ""))
-          boxViolin( names = samplename() , vsd=vsd$data, boxplotswitch=boxplotswitch(),
+          p <- boxViolin( names = samplename() , vsd=vsd$data, boxplotswitch=boxplotswitch(),
                     intgroup=variables(), customColor = coloresPCA$colores() ) 
+          svg$boxviolin <- p
+          print(p)
   })
-
+output$downViolin <- downloadHandler(
+  filename = "box_violin.svg",
+  content = function(file){
+    ggsave(file, svg$boxviolin, "svg", units = "in", width = 10, height = 10)}
+)
 # ............ ###############################
+# Funcion tamaño plot ########################
+myHeightfunction <- function(filas) {
+  if (length(filas) <= 10) {
+    return(400)
+  } else if (length(filas) > 10 & length(filas) <= 35) {
+    return(600)
+  } else{
+    return(800)
+  }
+  }
 # KEGG table All #####################################
   output$tableAll <- DT::renderDT(server=FALSE,{
     validate(need(kgg$all, "Load file to render table"))
@@ -1192,7 +1290,7 @@ output$karyoPlot <- renderPlot({
         ) )
   }) 
 # KEGG barplot All ################
-  output$keggPlotAll <- renderPlotly ({
+  output$keggPlotAll <- renderPlotly({
     validate(need(kgg$all, "Load file to render BarPlot"))
     rowsAll <- rowsAll()
     if(is.null(rowsAll)){
@@ -1202,11 +1300,24 @@ output$karyoPlot <- renderPlot({
     p <- plotKeggAll(enrichdf = kgg$all[rowsAll,], nrows = length(rowsAll),
                 genesUp = data$genesUp, genesDown = data$genesDown,
                 colors = c(input$downColor, input$upColor))
-    if(typeBarKeggAll() == "Dodge"){
-        print(p[[1]])   } else if(typeBarKeggAll()=="Stack"){
-            print(p[[2]])} else {print(p[[3]])}
-        
+    if (typeBarKeggAll() == "Dodge") {
+      plt <- p[[1]]; svg$keggall <- p[[1]]
+    } else if (typeBarKeggAll() == "Stack") {
+      plt <- p[[2]]; svg$keggall <- p[[2]]
+    } else {
+      plt <- p[[3]]; svg$keggall <- p[[3]]
+    }
+    plt <- plt %>% plotly::ggplotly(tooltip = "all" )
+    plt$height <- myHeightfunction( rowsAll() )
+    plt$x$layout$height <- myHeightfunction(rowsAll() )
+    plt
   })
+
+output$barKeggAll <- downloadHandler(
+  filename = "barkeggall.svg",
+  content = function(file){
+    ggsave(file, svg$keggall, "svg", width = 10, units = "in") }
+)
   # KEGG chordiag plot All ###############
   output$keggChordAll <- renderMychordplot({
     validate(need(kgg$all, "Load file to render ChordPlot"))
@@ -1228,21 +1339,43 @@ output$karyoPlot <- renderPlot({
         }
     legendChorplot(kgg$all[rowsAll, ] )
   })
-  # KEGG dotplot All ################### 
+  
+
+  # KEGG dotplot All ###################
   output$keggDotAll <- renderPlot({
     validate(need(kgg$all, "Load file and select to render dotPlot"),
              need(rowsAll(), "Select the paths of interest to render DotPlot"))
     rowsAll <- rowsAll()
     if(is.null(rowsAll)){rowsAll <- c(1:20)}
-    dotPlotkegg(kgg$all[rowsAll,], n = length(rowsAll))
-  })
+    p <- dotPlotkegg(kgg$all[rowsAll,], n = length(rowsAll))
+    svg$dotKeggAll <- p
+    print(p)
+  }, height = reactive( myHeightfunction(rowsAll() ) ) )
+  
+  output$dotkeggAll <- downloadHandler(
+    filename = "dotKeggAll.svg",
+    content = function(file){
+    ggsave(file, svg$dotKeggAll, device = "svg", width = 10, units = "in") }
+  )
   # KEGG heatmap All #################
   output$heatmapKeggAll <- renderPlotly({
     validate(need(kgg$all, "Load file and select to render Heatmap"),
              need(rowsAll(), "Select the paths of interest to render HeatMap"),
              need(kggDT$all, ""))
-    heatmapKeggLogFC(kggDT$all, res$sh, rowsAll() ) 
+    plt <- heatmapKeggLogFC(kggDT$all, res$sh, rowsAll() ) 
+    svg$heatKeggAll <- list(kggDT$all, rowsAll())
+    plt <- ggplotly(plt)
+    plt$height <- myHeightfunction( rowsAll() )
+    plt$x$layout$height <- myHeightfunction(rowsAll() )
+    plt
   })
+  
+    output$heatKeggAll <- downloadHandler(
+    filename = "heatKeggAll.svg",
+    content = function(file){
+    p <- heatmapKegg(svg$heatKeggAll[[1]],svg$heatKeggAll[[2]] )
+    ggsave(filename= file, plot = p, device = "svg", width = 10, units = "in") }
+  )
   # KEGG cnet All #################
   output$legend <- renderPlot({
     validate(need(kgg$all, "Load file and select to render Net Plot"),
@@ -1262,7 +1395,9 @@ output$karyoPlot <- renderPlot({
   output$cnetKeggAll <- renderPlot({
     validate(need(kgg$all, "Load file and select to render Net Plot"),
              need(rowsAll(), "Select the paths of interest to render NetPlot"))
-    customCnetKegg(kgg$all, rowsAll(), genesUp = data$genesUp, genesDown = data$genesDown)
+    p <- customCnetKegg(kgg$all, rowsAll(), genesUp = data$genesUp, genesDown = data$genesDown)
+    svg$cnetKeggAll <- p
+    print(p)
   })
 
   output$visnetKeggAll <- renderVisNetwork({
@@ -1275,6 +1410,12 @@ output$karyoPlot <- renderPlot({
     visOptions(highlightNearest = list(enabled=TRUE, hover=TRUE),
                 nodesIdSelection = TRUE)
   })
+  
+  output$cnetKggAll <- downloadHandler(
+    filename = "cnetKeggAll.svg",
+    content = function(file){
+    ggsave(filename = file, plot = svg$cnetKeggAll, device = "svg", width = 12, height = 10, units = "in") }
+  )
   # ............ ###############################
   # KEGG table up#####################################
   output$table <- DT::renderDT(server=FALSE,{
@@ -1305,8 +1446,20 @@ output$karyoPlot <- renderPlot({
         if( dim(kgg$up)[1]<10 ){rowsUp <-  seq_len(nrow(kgg$up)) }
         else{ rowsUp <-  seq_len(10)  }
         }
-    plotKegg(enrichdf = kgg$up[rowsUp,], nrows = length(rowsUp), colors = c(input$upColor))
+      p <- plotKegg(enrichdf = kgg$up[rowsUp,], nrows = length(rowsUp), colors = c(input$upColor))
+      svg$barkeggup <- p[[2]] 
+      
+      plt <- p[[1]]
+      plt$height <- myHeightfunction( rowsUp() )
+      plt$x$layout$height <- myHeightfunction(rowsUp() )
+      plt
   })
+  
+    output$barKeggUp <- downloadHandler(
+    filename = "barkeggup.svg",
+    content = function(file){
+    ggsave(file, svg$barkeggup, "svg", width = 10, height = 10, units = "in") }
+  )
   # KEGG chordiag plot up ###############
   output$keggChord <- renderMychordplot({
     validate(need(kgg$up, "Load file to render ChordPlot"))
@@ -1334,16 +1487,36 @@ output$karyoPlot <- renderPlot({
              need(rowsUp(), "Select the paths of interest to render DotPlot"))
     rowsUp <- rowsUp()
     if(is.null(rowsUp)){rowsUp <- c(1:20)}
-    dotPlotkegg(kgg$up[rowsUp,], n = length(rowsUp))
-  })
+    p <- dotPlotkegg(kgg$up[rowsUp,], n = length(rowsUp))
+    svg$dotKeggUp <- p
+    p
+  }, height = reactive( myHeightfunction(rowsUp() ) ) )
+  
+  output$dotKeggUp <- downloadHandler(
+    filename = "dotKeggUp.svg",
+    content = function(file){
+    ggsave(file, svg$dotKeggUp, device = "svg", width = 10, units = "in") }
+  )
   # KEGG heatmap Up #################
   output$heatmapKeggUp <- renderPlotly({
     validate(need(kgg$up, "Load file and select to render Heatmap"),
              need(rowsUp(), "Select the paths of interest to render HeatMap"),
              need(kggDT$up, ""))
-    #heatmapKegg(kggDT$up, rowsUp())
-    heatmapKeggLogFC(kggDT$up, res$sh, rowsUp() ) 
+    p <- heatmapKegg(kggDT$up, rowsUp())
+    svg$heatKeggUp <- list(kggDT$up, rowsUp())
+    plt <- ggplotly(p)
+    plt$height <- myHeightfunction( rowsUp() )
+    plt$x$layout$height <- myHeightfunction(rowsUp() )
+    plt
   })
+
+  output$heatKeggUp <- downloadHandler(
+    filename = "heatKeggUp.svg",
+    content = function(file){
+    p <- heatmapKegg(svg$heatKeggUp[[1]],svg$heatKeggUp[[2]] )
+    ggsave(filename= file, plot = p, device = "svg", width = 10, units = "in") }
+  )
+  
   # KEGG cnet Up #################
    output$keggUpNet <- renderUI({
     if(!isTRUE( input$keggUpNet_switch ) ){
@@ -1355,7 +1528,9 @@ output$karyoPlot <- renderPlot({
   output$cnetKeggUp <- renderPlot({
     validate(need(kgg$up, "Load file and select to render Net Plot"),
              need(rowsUp(), "Select the paths of interest to render NetPlot"))
-    customCnetKegg(kgg$up, rowsUp(), genesUp = data$genesUp, genesDown = data$genesDown)
+    p <- customCnetKegg(kgg$up, rowsUp(), genesUp = data$genesUp, genesDown = data$genesDown)
+    svg$cnetKeggUp <- p
+    print(p)
   })
   output$visnetKeggUp <- renderVisNetwork({
     validate(need(kgg$up, "Load file and select to render Net Plot"),
@@ -1367,7 +1542,11 @@ output$karyoPlot <- renderPlot({
     visOptions(highlightNearest = list(enabled=TRUE, hover=TRUE),
                 nodesIdSelection = TRUE)
   })
-  
+  output$cnetkeggUp <- downloadHandler(
+    filename = "cnetKeggUp.svg",
+    content = function(file){
+    ggsave(filename = file, plot = svg$cnetKeggUp, device = "svg", width = 12, height = 10, units = "in") }
+  )
   # ............ ###############################
   # KEGG table down #####################################
   output$tableDown <- DT::renderDT(server=FALSE,{
@@ -1393,14 +1572,26 @@ output$karyoPlot <- renderPlot({
   # KEGG barplot down ################
   output$keggPlotDown <- renderPlotly ({
     validate(need(kgg$down, "Load file to render BarPlot"))
-    rowsdown <- rowsdown()
+      rowsdown <- rowsdown()
     if(is.null(rowsdown)){
         if( dim(kgg$down)[1]<10 ){rowsdown <-  seq_len(nrow(kgg$down)) }
         else{ rowsdown <-  seq_len(10)  }
         }
-    plotKegg(enrichdf = kgg$down[rowsdown,], nrows = length(rowsdown), 
-             colors = c(input$downColor))
+    p <- plotKegg(enrichdf = kgg$down[rowsdown,], nrows = length(rowsdown),
+                  colors = c(input$downColor))
+    svg$barkeggdown <- p[[2]] 
+    plt <- p[[1]]
+    plt$height <- myHeightfunction( rowsdown() )
+    plt$x$layout$height <- myHeightfunction(rowsdown() )
+    plt
+
   })
+  
+  output$barKeggDown <- downloadHandler(
+    filename = "barkeggdown.svg",
+    content = function(file){
+    ggsave(file, svg$barkeggdown, "svg", width = 10, height = 10, units = "in") }
+  )
   # KEGG chordiag plot down ###############
   output$keggChordDown <- renderMychordplot({
     validate(need(kgg$down, "Load file to render ChordPlot"))
@@ -1427,15 +1618,35 @@ output$karyoPlot <- renderPlot({
              need(rowsdown(), "Select the paths of interest to render dotPlot"))
     rowsdown <- rowsdown()
     if(is.null(rowsdown)){rowsdown <- c(1:20)}
-    dotPlotkegg(kgg$down[rowsdown,], n = length(rowsdown))
-  })
+    p <- dotPlotkegg(kgg$down[rowsdown,], n = length(rowsdown))
+    svg$dotKeggDown<- p
+    p
+  }, height = reactive( myHeightfunction(rowsdown() ) ) )
+ 
+  output$dotKeggDown <- downloadHandler(
+    filename = "dotKeggDown.svg",
+    content = function(file){
+    ggsave(file, svg$dotKeggDown, device = "svg", width = 10, units = "in") }
+  )
+
   # KEGG heatmap Down #################
   output$heatmapKeggDown <- renderPlotly({
     validate(need(kgg$down, "Load file to render Heatmap"),
              need(rowsdown(), "Select the paths of interest to render Heatmap"))
-    #heatmapKegg(kggDT$down, rowsdown())
-    heatmapKeggLogFC(kggDT$down, res$sh, rowsdown() ) 
+    p <- heatmapKegg(kggDT$down, rowsdown())
+    svg$heatKeggDown <- list(kggDT$down, rowsdown())
+    plt <- ggplotly(p)
+    plt$height <- myHeightfunction( rowsdown() )
+    plt$x$layout$height <- myHeightfunction(rowsdown() )
+    plt
   })
+
+  output$heatKeggDown <- downloadHandler(
+    filename = "heatKeggDown.svg",
+    content = function(file){
+    p <- heatmapKegg(svg$heatKeggDown[[1]],svg$heatKeggDown[[2]] )
+    ggsave(filename= file, plot = p, device = "svg", width = 10, units = "in") }
+  )
     # KEGG cnet Down #################
    output$keggDownNet <- renderUI({
     if(!isTRUE( input$keggDownNet_switch ) ){
@@ -1447,7 +1658,10 @@ output$karyoPlot <- renderPlot({
   output$cnetKeggDown <- renderPlot({
     validate(need(kgg$down, "Load file and select to render Net Plot"),
              need(rowsdown(), "Select the paths of interest to render NetPlot"))
-    customCnetKegg(kgg$down, rowsdown(), genesUp = data$genesUp, genesDown = data$genesDown)
+    p <- customCnetKegg(kgg$down, rowsdown(), genesUp = data$genesUp,
+                        genesDown = data$genesDown)
+    svg$cnetKeggDown <- p
+    print(p)
   })
   output$visnetKeggDown <- renderVisNetwork({
     validate(need(kgg$down, "Load file and select to render Net Plot"),
@@ -1459,6 +1673,11 @@ output$karyoPlot <- renderPlot({
     visOptions(highlightNearest = list(enabled=TRUE, hover=TRUE),
                 nodesIdSelection = TRUE)
   })
+  output$cnetkeggDown <- downloadHandler(
+    filename = "cnetKeggDown.svg",
+    content = function(file){
+    ggsave(filename = file, plot = svg$cnetKeggDown, device = "svg", width = 10, height = 10, units = "in") }
+  )
   # ............ ###############################
   # GO table BP ALL #####################
   output$tableBPall <- DT::renderDataTable(server=FALSE,{
@@ -1491,38 +1710,89 @@ output$karyoPlot <- renderPlot({
     p <- plotGOAll(enrichdf = gosBP[bprowsall, ], nrows = length(bprowsall), ont="BP", 
               genesUp = data$genesUp, genesDown = data$genesDown,
               colors = c(input$downColor, input$upColor))
-    if( typeBarBpAll() == "Dodge") { print(p[[1]]) }
-    else if ( typeBarBpAll() == "Stack") { print(p[[2]]) }
-    else { print(p[[3]]) }
+    if (typeBarBpAll() == "Dodge") {
+      plt <- p[[1]]; svg$barbpall <- p[[1]]
+    }
+    else if (typeBarBpAll() == "Stack") {
+      plt <- p[[2]]; svg$barbpall <- p[[2]]
+    }
+    else {
+      plt <- p[[3]] ;svg$barbpall <- p[[3]] 
+    }
+    plt$height <- myHeightfunction( bprowsall() )
+    plt$x$layout$height <- myHeightfunction(bprowsall() )
+    plt
   })
+    output$barBpAll <- downloadHandler(
+    filename = "barbpall.svg",
+    content = function(file){
+      ggsave(file, svg$barbpall, "svg", width = 10, units = "in") }
+  )
   # GO BP dotplot all ################### 
   output$BPDotall <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"),
              need(bprowsall(), "Select the terms of interest to render DotPlot"))
-    bprowsall <- bprowsall()
+   bprowsall <- bprowsall()
     if(is.null(bprowsall)){bprowsall <- c(1:20)}
     gosBP <- go$all[go$all$Ont=="BP",]
-    dotPlotGO(gosBP[bprowsall,], n = length(bprowsall))
-  })
+    p <- dotPlotGO(gosBP[bprowsall,], n = length(bprowsall))
+    svg$dotbpall <- p
+    print(p)
+  }, height = reactive( myHeightfunction(bprowsall() ) ) )
+  
+  output$dotBpAll <- downloadHandler(
+    filename = "dotbpall.svg",
+    content = function(file){
+      ggsave(file, svg$dotbpall, device = "svg", width = 10, units = "in") }
+  )
   # GO gobarplot BP all #######################
   output$gobarplotAllBP <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
     bprowsall <- bprowsall()
-    goBarplot(enrichGO = go$all, resGO = res$sh, genes= data$genesall,
+    p <- goBarplot(enrichGO = go$all, resGO = res$sh, genes= data$genesall,
               category = "BP", nrows = bprowsall)
+    svg$gobarbpall <- p
+    print(p)
   })
+  
+  output$gobarBpAll <- downloadHandler(
+    filename = "gobarbpall.svg",
+    content = function(file){
+      ggsave(file, svg$gobarbpall, device = "svg", width = 10, units = "in") }
+  )
   # GO circle BP all #####################
   output$goCircleAllBP <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"),
              need(res$sh,""),
              need( bprowsall() , "Select at least 4 rows"))
     bprowsall <- bprowsall()
-    goall <- go$all[go$all$Ont=="BP", ]
     if(length(bprowsall)>=4){
-      circ <- data2circle(go=goall[bprowsall, ], res=res$sh, genes=data$genesall)
-      circle(circ, label.size = 3, nsub = length(bprowsall), table.legend = FALSE)
+      circ <- data2circle(go=go$all[bprowsall, ], res=res$sh, genes=data$genesall)
+      p <- circle(circ, label.size = 3, nsub = length(bprowsall), table.legend = FALSE)
+      svg$cirbpall <- p
+      print(p)
     }
   })
+  output$cirBpAll <- downloadHandler(
+    filename = "cirbpall.svg",
+    content = function(file){
+      ggsave(file, svg$cirbpall, device = "svg", width = 10, units = "in") }
+  )
+  # GO cloud BP all #######################
+  output$cloudBPAll <- renderPlot({
+    validate(need(go$all, "Load file to render dotPlot"))
+    goall <- go$all[go$all$Ont=="BP", ]
+    myggwordcloud(goall, bg = "#343e48")
+  })
+  
+  output$cloudbpall <- downloadHandler(
+    filename = "cloudbpall.svg",
+    content = function(file){
+      svg(file, width = 8, height = 6)
+      myggwordcloud(go$all[go$all$Ont=="BP", ])
+      dev.off()
+    }
+  )
   # ............ ###############################
   # GO table MF all #####################
   output$tableMFall <- DT::renderDataTable({
@@ -1557,10 +1827,25 @@ output$karyoPlot <- renderPlot({
     p <- plotGOAll(enrichdf = gosMF[mfrowsall, ], nrows = length(mfrowsall), ont="MF", 
                    genesUp = data$genesUp, genesDown = data$genesDown,
                    colors = c(input$downColor, input$upColor))
-    if( typeBarMfAll() == "Dodge") { print(p[[1]]) }
-    else if ( typeBarMfAll() == "Stack") { print(p[[2]]) }
-    else { print(p[[3]]) }
+    if( typeBarMfAll() == "Dodge") {
+          plt <- p[[1]]; svg$barmfall <- p[[1]]
+          }
+        else if ( typeBarMfAll() == "Stack") {
+          plt <- p[[2]]; svg$barmfall <- p[[2]]
+        }
+        else { 
+          plt <- p[[3]]; svg$barmfall <- p[[3]]
+          }
+    plt <- plt %>% plotly::ggplotly(tooltip = "all" )
+    plt$height <- myHeightfunction( mfrowsall() )
+    plt$x$layout$height <- myHeightfunction(mfrowsall() )
+    plt
   })
+  output$barMfAll <- downloadHandler(
+    filename = "barmfall.svg",
+    content = function(file){
+      ggsave(file, svg$barmfall, "svg", width = 10, units = "in") }
+  )
   # GO MF dotplot all ################### 
   output$MFDotall <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"),
@@ -1568,27 +1853,64 @@ output$karyoPlot <- renderPlot({
     mfrowsall <- mfrowsall()
     if(is.null(mfrowsall)){mfrowsall <- c(1:20)}
     gosMF <- go$all[go$all$Ont=="MF",]
-    dotPlotGO(gosMF[mfrowsall,], n = length(mfrowsall))
-  })
+    p <- dotPlotGO(gosMF[mfrowsall,], n = length(mfrowsall))
+    svg$dotmfall <- p
+    print(p)
+  }, height = reactive( myHeightfunction(mfrowsall() ) ) )
+  
+  output$dotMfAll <- downloadHandler(
+    filename = "dotmfall.svg",
+    content = function(file){
+      ggsave(file, svg$dotmfall, device = "svg", width = 10, units = "in") }
+  )
   # GO gobarplot MF all ####################
   output$gobarplotAllMF <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
     mfrowsall <- mfrowsall()
-    goBarplot(enrichGO = go$all, resGO = res$sh, genes= data$genesall,
+    p <- goBarplot(enrichGO = go$all, resGO = res$sh, genes= data$genesall,
               category = "MF", nrows = mfrowsall)
+    svg$gobarmfall <- p
+    print(p)
   })
+  
+  output$gobarMfAll <- downloadHandler(
+    filename = "gobarmfall.svg",
+    content = function(file){
+      ggsave(file, svg$gobarmfall, device = "svg", width = 10, units = "in") }
+  )
   # GO circle MF all #####################
   output$goCircleAllMF <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"),
              need(res$sh,""),
              need( mfrowsall() , "Select at least 4 rows"))
     mfrowsall <- mfrowsall()
-    goall <- go$all[go$all$Ont=="MF", ]
     if(length(mfrowsall)>=4){
-      circ <- data2circle(go=goall[mfrowsall, ], res=res$sh, genes=data$genesall)
-      circle(circ, label.size = 3, nsub = length(mfrowsall), table.legend = FALSE)
+      circ <- data2circle(go=go$all[mfrowsall, ], res=res$sh, genes=data$genesall)
+      p <- circle(circ, label.size = 3, nsub = length(mfrowsall), table.legend = FALSE)
+      svg$cirmfall <- p
+      print(p)
     }
   })
+  output$cirMfAll <- downloadHandler(
+    filename = "cirmfall.svg",
+    content = function(file){
+      ggsave(file, svg$cirmfall, device = "svg", width = 10, units = "in") }
+  )
+  # GO cloud MF all #######################
+  output$cloudMFAll <- renderPlot({
+    validate(need(go$all, "Load file to render dotPlot"))
+    goall <- go$all[go$all$Ont=="MF", ]
+    myggwordcloud(goall, bg = "#343e48")
+  })
+  
+  output$cloudmfall <- downloadHandler(
+    filename = "cloudmfall.svg",
+    content = function(file){
+      svg(file, width = 8, height = 6)
+      myggwordcloud(go$all[go$all$Ont=="MF", ])
+      dev.off()
+    }
+  )
   # ............ ###############################
   # GO table CC all #####################
   output$tableCCall <- DT::renderDataTable(server=FALSE,{
@@ -1623,10 +1945,25 @@ output$karyoPlot <- renderPlot({
     p <- plotGOAll(enrichdf = gosCC[ccrowsall, ], nrows = length(ccrowsall), ont="CC", 
                    genesUp = data$genesUp, genesDown = data$genesDown,
                    colors = c(input$downColor, input$upColor))
-    if( typeBarCcAll() == "Dodge") { print(p[[1]]) }
-    else if ( typeBarCcAll() == "Stack") { print(p[[2]]) }
-    else { print(p[[3]]) }
+    if( typeBarCcAll() == "Dodge") {
+      plt <- p[[3]]; svg$barccall <- p[[1]]
+      }
+    else if ( typeBarCcAll() == "Stack") {
+      plt <- p[[2]] ; svg$barccall <- p[[2]]
+      }
+    else {
+      plt <- p[[3]] ; svg$barccall <- p[[3]]
+      }
+    plt <- plt %>% plotly::ggplotly(tooltip = "all" )
+    plt$height <- myHeightfunction( ccrowsall() )
+    plt$x$layout$height <- myHeightfunction(ccrowsall() )
+    plt
   })
+    output$barCcAll <- downloadHandler(
+    filename = "barccall.svg",
+    content = function(file){
+      ggsave(file, svg$barccall, "svg", width = 10, units = "in") }
+  )
   # GO CC dotplot all ################### 
   output$CCDotall <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"),
@@ -1634,27 +1971,64 @@ output$karyoPlot <- renderPlot({
     ccrowsall <- ccrowsall()
     if(is.null(ccrowsall)){ccrowsall <- c(1:20)}
     gosCC <- go$all[go$all$Ont=="CC",]
-    dotPlotGO(gosCC[ccrowsall,], n = length(ccrowsall))
-  })
+    p <- dotPlotGO(gosCC[ccrowsall,], n = length(ccrowsall))
+    svg$dotccall <- p
+    print(p)
+  }, height = reactive( myHeightfunction(ccrowsall() ) ) )
+  
+  output$dotCcAll <- downloadHandler(
+    filename = "dotccall.svg",
+    content = function(file){
+      ggsave(file, svg$dotccall, device = "svg", width = 10, units = "in") }
+  )
   # GO gobarplot CC all #######################
   output$gobarplotAllCC <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
     ccrowsall <- ccrowsall()
-    goBarplot(enrichGO = go$all, resGO = res$sh, genes= data$genesall,
+    p <- goBarplot(enrichGO = go$all, resGO = res$sh, genes= data$genesall,
               category = "CC", nrows = ccrowsall)
+    svg$gobarmfall <- p
+    print(p)
   })
+  
+  output$gobarMfAll <- downloadHandler(
+    filename = "gobarmfall.svg",
+    content = function(file){
+      ggsave(file, svg$gobarmfall, device = "svg", width = 10, units = "in") }
+  )
   # GO circle CC all #####################
   output$goCircleAllCC <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"),
              need(res$sh,""),
              need( ccrowsall() , "Select at least 4 rows"))
     ccrowsall <- ccrowsall()
-    goall <- go$all[go$all$Ont=="CC", ]
     if(length(ccrowsall)>=4){
-      circ <- data2circle(go=goall[ccrowsall, ], res=res$sh, genes=data$genesall)
-      circle(circ, label.size = 3, nsub = length(ccrowsall), table.legend = FALSE)
+      circ <- data2circle(go=go$all[ccrowsall, ], res=res$sh, genes=data$genesall)
+      p <- circle(circ, label.size = 3, nsub = length(ccrowsall), table.legend = FALSE)
+      svg$circcall <- p
+      print(p)
     }
   })
+  output$cirCcAll <- downloadHandler(
+    filename = "circcall.svg",
+    content = function(file){
+      ggsave(file, svg$circcall, device = "svg", width = 10, units = "in") }
+  )
+    # GO cloud CC all #######################
+  output$cloudCCAll <- renderPlot({
+    validate(need(go$all, "Load file to render dotPlot"))
+    goall <- go$all[go$all$Ont=="CC", ]
+    myggwordcloud(goall, bg = "#343e48")
+  })
+  
+  output$cloudccall <- downloadHandler(
+    filename = "cloudccall.svg",
+    content = function(file){
+      svg(file, width = 8, height = 6)
+      myggwordcloud(go$all[go$all$Ont=="CC", ])
+      dev.off()
+    }
+  )
   # ............ ###############################
   # GO table BP UP#####################
   output$tableBP <- DT::renderDataTable(server=FALSE,{
@@ -1681,12 +2055,25 @@ output$karyoPlot <- renderPlot({
   # GO plots BP UP #####################
   output$plotBP <- renderPlotly({
     validate(need(go$up, "Load file to render plot"))
-    bprowsup <- bprowsup()
+      bprowsup <- bprowsup()
     if(is.null(bprowsup)){bprowsup <- c(1:10)}
     gosBP <- go$up[go$up$Ont=="BP",]
-    plotGO(enrichdf = gosBP[bprowsup, ], nrows = length(bprowsup), ont="BP",
+    p <- plotGO(enrichdf = gosBP[bprowsup, ], nrows = length(bprowsup), ont="BP",
            colors = c(input$upColor) )
+    svg$barbpup <- p
+    plt <- p
+    
+    plt <- plt %>% plotly::ggplotly(tooltip = "all" )
+    plt$height <- myHeightfunction( ccrowsall() )
+    plt$x$layout$height <- myHeightfunction(ccrowsall() )
+    plt
   })
+  
+  output$barBpUp <- downloadHandler(
+    filename = "barbpup.svg",
+    content = function(file){
+      ggsave(file, svg$barbpup, "svg", width = 10, units = "in") }
+  )
   # GO BP dotplot up ################### 
   output$BPDotUp <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"),
@@ -1694,15 +2081,33 @@ output$karyoPlot <- renderPlot({
     bprowsup <- bprowsup()
     if(is.null(bprowsup)){bprowsup <- c(1:20)}
     gosBP <- go$up[go$up$Ont=="BP",]
-    dotPlotGO(gosBP[bprowsup,], n = length(bprowsup))
-  })
+    p <- dotPlotGO(gosBP[bprowsup,], n = length(bprowsup))
+    svg$dotbpup <- p
+    print(p)
+  }, height = reactive( myHeightfunction(bprowsup() ) ) )
+  
+  output$dotBpUp <- downloadHandler(
+    filename = "dotbpup.svg",
+    content = function(file){
+      ggsave(file, svg$dotbpup, device = "svg", width = 10, units = "in") }
+  )
+  
   # GO gobarplot BP Up #######################
   output$gobarplotUpBP <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
     bprowsup <- bprowsup()
-    goBarplot(enrichGO = go$up, resGO = res$sh, genes= data$genesUp,
+    p <- goBarplot(enrichGO = go$up, resGO = res$sh, genes= data$genesUp,
               category = "BP", nrows = bprowsup)
+    svg$gobarbpup <- p
+    print(p)
   })
+  
+  output$gobarBpUp <- downloadHandler(
+    filename = "gobarbpup.svg",
+    content = function(file){
+      ggsave(file, svg$gobarbpup, device = "svg", width = 10, units = "in") }
+  )
+  
     # GO circle BP Up #####################
   output$goCircleUpBP <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"),
@@ -1711,9 +2116,33 @@ output$karyoPlot <- renderPlot({
     bprowsup <- bprowsup()
     if(length(bprowsup)>=4){
       circ <- data2circle(go=go$up[bprowsup, ], res=res$sh, genes=data$genesUp)
-      circle(circ, label.size = 3, nsub = length(bprowsup), table.legend = FALSE)
+      p <- circle(circ, label.size = 3, nsub = length(bprowsup), table.legend = FALSE)
+      svg$cirbpup <- p
+      print(p)
     }
   })
+  output$cirBpUp <- downloadHandler(
+    filename = "cirbpup.svg",
+    content = function(file){
+      ggsave(file, svg$cirbpup, device = "svg", width = 10, units = "in") }
+  )
+  
+    # GO cloud BP UP  #######################
+  output$cloudBPUp <- renderPlot({
+    validate(need(go$up, "Load file to render dotPlot"))
+    goup <- go$up[go$up$Ont=="BP", ]
+    myggwordcloud(goup, bg = "#343e48")
+  })
+  
+  output$cloudbpup <- downloadHandler(
+    filename = "cloudbpup.svg",
+    content = function(file){
+      svg(file, width = 8, height = 6)
+      myggwordcloud(go$up[go$up$Ont=="BP", ])
+      dev.off()
+    }
+  )
+  
   # ............ ###############################
   # GO table MF UP #####################
   output$tableMF <- DT::renderDataTable({
@@ -1745,9 +2174,23 @@ output$karyoPlot <- renderPlot({
     mfrowsup <- mfrowsup()
     if(is.null(mfrowsup)){mfrowsup <- c(1:10)}
     gosMF <- go$up[go$up$Ont=="MF",]
-    plotGO(enrichdf = gosMF[mfrowsup, ], nrows = length(mfrowsup), ont = "MF",
+    p <- plotGO(enrichdf = gosMF[mfrowsup, ], nrows = length(mfrowsup), ont = "MF",
            colors = c(input$upColor) )
+    svg$barmfup <- p
+    plt <- p
+    
+    plt <- plt %>% plotly::ggplotly(tooltip = "all" )
+    plt$height <- myHeightfunction( mfrowsup() )
+    plt$x$layout$height <- myHeightfunction(mfrowsup() )
+    plt
+    
   })
+  
+  output$barMfUp <- downloadHandler(
+    filename = "barmfup.svg",
+    content = function(file){
+      ggsave(file, svg$barmfup, "svg", width = 10, units = "in") }
+  )
   # GO MF dotplot up ################### 
   output$MFDotUp <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"),
@@ -1755,15 +2198,33 @@ output$karyoPlot <- renderPlot({
     mfrowsup <- mfrowsup()
     if(is.null(mfrowsup)){mfrowsup <- c(1:20)}
     gosMF <- go$up[go$up$Ont=="MF",]
-    dotPlotGO(gosMF[mfrowsup,], n = length(mfrowsup))
-  })
+    p <- dotPlotGO(gosMF[mfrowsup,], n = length(mfrowsup))
+    svg$dotmfup <- p
+    print(p)
+  }, height = reactive( myHeightfunction(mfrowsup() ) ) )
+  
+  output$dotMfUp <- downloadHandler(
+    filename = "dotmfup.svg",
+    content = function(file){
+      ggsave(file, svg$dotmfup, device = "svg", width = 10, units = "in") }
+  )
+  
   # GO gobarplot MF Up #######################
   output$gobarplotUpMF <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
-    mfrowsup <- mfrowsup()
-    goBarplot(enrichGO = go$up, resGO = res$sh, genes= data$genesUp,
+      mfrowsup <- mfrowsup()
+    p <- goBarplot(enrichGO = go$up, resGO = res$sh, genes= data$genesUp,
               category = "MF", nrows = mfrowsup)
+    svg$gobarmfup <- p
+    print(p)
   })
+  
+  output$gobarMfUp <- downloadHandler(
+    filename = "gobarmfup.svg",
+    content = function(file){
+      ggsave(file, svg$gobarmfup, device = "svg", width = 10, units = "in") }
+  )
+  
   # GO circle MF Up #####################
   output$goCircleUpMF <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"),
@@ -1772,9 +2233,32 @@ output$karyoPlot <- renderPlot({
     mfrowsup <- mfrowsup()
     if(length(mfrowsup)>=4){
       circ <- data2circle(go=go$up[mfrowsup, ], res=res$sh, genes=data$genesUp)
-      circle(circ, label.size = 3, nsub = length(mfrowsup), table.legend = FALSE)
+      p <- circle(circ, label.size = 3, nsub = length(mfrowsup), table.legend = FALSE)
+      svg$cirmfup <- p
+      print(p)
     }
   })
+  output$cirMfUp <- downloadHandler(
+    filename = "cirmfup.svg",
+    content = function(file){
+      ggsave(file, svg$cirmfup, device = "svg", width = 10, units = "in") }
+  )
+  
+  # GO cloud MF UP  #######################
+  output$cloudMFUp <- renderPlot({
+    validate(need(go$up, "Load file to render dotPlot"))
+    goup <- go$up[go$up$Ont=="MF", ]
+    myggwordcloud(goup, bg = "#343e48")
+  })
+  
+  output$cloudmfup <- downloadHandler(
+    filename = "cloudmfup.svg",
+    content = function(file){
+      svg(file, width = 8, height = 6)
+      myggwordcloud(go$up[go$up$Ont=="MF", ])
+      dev.off()
+    }
+  )
   # ............ ###############################
   # GO table CC UP #####################
   output$tableCC <- DT::renderDataTable(server=FALSE,{
@@ -1806,9 +2290,23 @@ output$karyoPlot <- renderPlot({
     ccrowsup <- ccrowsup()
     if(is.null(ccrowsup)){ccrowsup <- c(1:10)}
     gosCC <- go$up[go$up$Ont=="CC",]
-    plotGO(enrichdf = gosCC[ccrowsup,], nrows = length(ccrowsup), ont="CC",
+    p <- plotGO(enrichdf = gosCC[ccrowsup,], nrows = length(ccrowsup), ont="CC",
            colors = c(input$upColor))
+    svg$barccup <- p
+    plt <- p
+    
+    plt <- plt %>% plotly::ggplotly(tooltip = "all" )
+    plt$height <- myHeightfunction( ccrowsup() )
+    plt$x$layout$height <- myHeightfunction(ccrowsup() )
+    plt
   })
+  
+  output$barCcUp <- downloadHandler(
+    filename = "barccup.svg",
+    content = function(file){
+      ggsave(file, svg$barccup, "svg", width = 10, units = "in") }
+  )
+  
   # GO CC dotplot up ################### 
   output$CCDotUp <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"),
@@ -1816,15 +2314,32 @@ output$karyoPlot <- renderPlot({
     ccrowsup <- ccrowsup()
     if(is.null(ccrowsup)){ccrowsup <- c(1:20)}
     gosCC <- go$up[go$up$Ont=="CC",]
-    dotPlotGO(gosCC[ccrowsup,], n = length(ccrowsup))
-  })
+    p <- dotPlotGO(gosCC[ccrowsup,], n = length(ccrowsup))
+    svg$dotccup <- p
+    print(p)
+  }, height = reactive( myHeightfunction(ccrowsup() ) ) )
+  
+  output$dotCcUp <- downloadHandler(
+    filename = "dotccup.svg",
+    content = function(file){
+      ggsave(file, svg$dotccup, device = "svg", width = 10, units = "in") }
+  )
+  
   # GO gobarplot CC Up #######################
   output$gobarplotUpCC <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
     ccrowsup <- ccrowsup()
     goBarplot(enrichGO = go$up, resGO = res$sh, genes= data$genesUp,
               category = "CC", nrows = ccrowsup)
+    svg$gobarccup <- p
+    print(p)
   })
+  
+  output$gobarCcUp <- downloadHandler(
+    filename = "gobarccup.svg",
+    content = function(file){
+      ggsave(file, svg$gobarccup, device = "svg", width = 10, units = "in") }
+  )
   # GO circle CC Up #####################
   output$goCircleUpCC <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"),
@@ -1835,7 +2350,36 @@ output$karyoPlot <- renderPlot({
       circ <- data2circle(go=go$up[ccrowsup, ], res=res$sh, genes=data$genesUp)
       circle(circ, label.size = 3, nsub = length(ccrowsup), table.legend = FALSE)
     }
+      ccrowsup <- ccrowsup()
+    if(length(ccrowsup)>=4){
+      circ <- data2circle(go=go$up[ccrowsup, ], res=res$sh, genes=data$genesUp)
+      p <- circle(circ, label.size = 3, nsub = length(ccrowsup), table.legend = FALSE)
+      svg$circcup <- p
+      print(p)
+    }
   })
+  
+  output$cirCcUp <- downloadHandler(
+    filename = "circcup.svg",
+    content = function(file){
+      ggsave(file, svg$circcup, device = "svg", width = 10, units = "in") }
+  )
+  
+    # GO cloud CC UP  #######################
+  output$cloudCCUp <- renderPlot({
+    validate(need(go$up, "Load file to render dotPlot"))
+    goup <- go$up[go$up$Ont=="CC", ]
+    myggwordcloud(goup, bg = "#343e48")
+  })
+  
+  output$cloudccup <- downloadHandler(
+    filename = "cloudccup.svg",
+    content = function(file){
+      svg(file, width = 8, height = 6)
+      myggwordcloud(go$up[go$up$Ont=="CC", ])
+      dev.off()
+    }
+  )
   # ............ ###############################
   # GO table BP DOWN #####################
   output$tableBPdown <- DT::renderDataTable(server=FALSE,{
@@ -1866,9 +2410,23 @@ output$karyoPlot <- renderPlot({
     bprowsdown <- bprowsdown()
     if(is.null(bprowsdown)){bprowsdown <- c(1:10)}
     gosBP <- go$down[go$down$Ont=="BP",]
-    plotGO(enrichdf = gosBP[bprowsdown, ], nrows = length(bprowsdown), ont="BP",
+    p <- plotGO(enrichdf = gosBP[bprowsdown, ], nrows = length(bprowsdown), ont="BP",
            colors = c(input$downColor))
+    svg$barbpdown <- p
+    plt <- p
+    
+    plt <- plt %>% plotly::ggplotly(tooltip = "all" )
+    plt$height <- myHeightfunction( bprowsdown() )
+    plt$x$layout$height <- myHeightfunction(bprowsdown() )
+    plt
   })
+  
+  output$barBpDown <- downloadHandler(
+    filename = "barbpdown.svg",
+    content = function(file){
+      ggsave(file, svg$barbpdown, "svg", width = 10, units = "in") }
+  )
+  
   # GO BP dotplot down ################### 
   output$BPDotDown <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"),
@@ -1876,15 +2434,32 @@ output$karyoPlot <- renderPlot({
     bprowsdown <- bprowsdown()
     if(is.null(bprowsdown)){bprowsdown <- c(1:20)}
     gosBP <- go$down[go$down$Ont=="BP",]
-    dotPlotGO(gosBP[bprowsdown,], n = length(bprowsdown))
-  })
+    p <- dotPlotGO(gosBP[bprowsdown,], n = length(bprowsdown))
+    svg$dotbpdown <- p
+    print(p)
+  }, height = reactive( myHeightfunction(bprowsdown() ) ) )
+  
+  
+  output$dotBpDown <- downloadHandler(
+    filename = "dotbpdown.svg",
+    content = function(file){
+      ggsave(file, svg$dotbpdown, device = "svg", width = 10, units = "in") }
+  )
   # GO gobarplot BP down #######################
   output$gobarplotDownBP <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
     bprowsdown <- bprowsdown()
-    goBarplot(enrichGO = go$down, resGO = res$sh, genes= data$genesDown,
+    p <- goBarplot(enrichGO = go$down, resGO = res$sh, genes= data$genesDown,
               category = "BP", nrows = bprowsdown)
+    svg$gobarbpdown <- p
+    print(p)
   })
+  
+  output$gobarBpDown <- downloadHandler(
+    filename = "gobarbpdown.svg",
+    content = function(file){
+      ggsave(file, svg$gobarbpdown, device = "svg", width = 10, units = "in") }
+  )
   # GO circle BP Down #####################
   output$goCircleDownBP <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"),
@@ -1893,9 +2468,31 @@ output$karyoPlot <- renderPlot({
     bprowsdown <- bprowsdown()
     if(length(bprowsdown)>=4){
       circ <- data2circle(go=go$down[bprowsdown, ], res=res$sh, genes=data$genesDown)
-      circle(circ, label.size = 3, nsub = length(bprowsdown), table.legend = FALSE)
+      p <- circle(circ, label.size = 3, nsub = length(bprowsdown), table.legend = FALSE)
+      svg$cirbpdown <- p
+      print(p)
     }
   })
+  output$cirBpDown <- downloadHandler(
+    filename = "cirbpdown.svg",
+    content = function(file){
+      ggsave(file, svg$cirbpdown, device = "svg", width = 10, units = "in") }
+  )
+  # GO cloud BP Down #######################
+  output$cloudBPDown <- renderPlot({
+    validate(need(go$down, "Load file to render dotPlot"))
+    godown <- go$down[go$down$Ont=="BP", ]
+    myggwordcloud(godown, bg = "#343e48")
+  })
+  
+  output$cloudbpdown <- downloadHandler(
+    filename = "cloudbpdown.svg",
+    content = function(file){
+      svg(file, width = 8, height = 6)
+      myggwordcloud(go$down[go$down$Ont=="BP", ])
+      dev.off()
+    }
+  )
   # ............ ###############################
   # GO table MF DOWN #####################
   output$tableMFdown <- DT::renderDataTable({
@@ -1927,9 +2524,22 @@ output$karyoPlot <- renderPlot({
     mfrowsdown <- mfrowsdown()
     if(is.null(mfrowsdown)){mfrowsdown <- c(1:10)}
     gosMF <- go$down[go$down$Ont=="MF",]
-    plotGO(enrichdf = gosMF[mfrowsdown, ], nrows = length(mfrowsdown), ont = "MF",
+    p <- plotGO(enrichdf = gosMF[mfrowsdown, ], nrows = length(mfrowsdown), ont = "MF",
            colors = c(input$downColor) )
+    svg$barmfdown <- p
+    plt <- p
+    
+    plt <- plt %>% plotly::ggplotly(tooltip = "all" )
+    plt$height <- myHeightfunction( mfrowsdown() )
+    plt$x$layout$height <- myHeightfunction(mfrowsdown() )
+    plt
   })
+  
+  output$barMfDown <- downloadHandler(
+    filename = "barmfdown.svg",
+    content = function(file){
+      ggsave(file, svg$barmfdown, "svg", width = 10, units = "in") }
+  )
   # GO MF dotplot down ################### 
   output$MFDotDown <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"),
@@ -1937,15 +2547,32 @@ output$karyoPlot <- renderPlot({
     mfrowsdown <- mfrowsdown()
     if(is.null(mfrowsdown)){mfrowsdown <- c(1:20)}
     gosMF <- go$down[go$down$Ont=="MF",]
-    dotPlotGO(gosMF[mfrowsdown,], n = length(mfrowsdown))
-  })
+    p <- dotPlotGO(gosMF[mfrowsdown,], n = length(mfrowsdown))
+    svg$dotmfdown <- p
+    print(p)
+  }, height = reactive( myHeightfunction(mfrowsdown() ) ) )
+  
+  
+  output$dotMfDown <- downloadHandler(
+    filename = "dotmfdown.svg",
+    content = function(file){
+      ggsave(file, svg$dotmfdown, device = "svg", width = 10, units = "in") }
+  )
   # GO gobarplot MF down #######################
   output$gobarplotDownMF <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
     mfrowsdown <- mfrowsdown()
-    goBarplot(enrichGO = go$down, resGO = res$sh, genes= data$genesDown,
+    p <- goBarplot(enrichGO = go$down, resGO = res$sh, genes= data$genesDown,
               category = "MF", nrows = mfrowsdown)
+    svg$gobarmfdown <- p
+    print(p)
   })
+  
+  output$gobarMfDown <- downloadHandler(
+    filename = "gobarmfdown.svg",
+    content = function(file){
+      ggsave(file, svg$gobarmfdown, device = "svg", width = 10, units = "in") }
+  )
   # GO circle MF Down #####################
   output$goCircleDownMF <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"),
@@ -1954,9 +2581,31 @@ output$karyoPlot <- renderPlot({
     mfrowsdown <- mfrowsdown()
     if(length(mfrowsdown)>=4){
       circ <- data2circle(go=go$down[mfrowsdown, ], res=res$sh, genes=data$genesDown)
-      circle(circ, label.size = 3, nsub = length(mfrowsdown), table.legend = FALSE)
+      p <- circle(circ, label.size = 3, nsub = length(mfrowsdown), table.legend = FALSE)
+      svg$cirmfdown <- p
+      print(p)
     }
   })
+  output$cirMfDown <- downloadHandler(
+    filename = "cirmfdown.svg",
+    content = function(file){
+      ggsave(file, svg$cirmfdown, device = "svg", width = 10, units = "in") }
+  )
+    # GO cloud MF Down #######################
+  output$cloudMFDown <- renderPlot({
+    validate(need(go$down, "Load file to render dotPlot"))
+    godown <- go$down[go$down$Ont=="MF", ]
+    myggwordcloud(godown, bg = "#343e48")
+  })
+  
+  output$cloudmfdown <- downloadHandler(
+    filename = "cloudmfdown.svg",
+    content = function(file){
+      svg(file, width = 8, height = 6)
+      myggwordcloud(go$down[go$down$Ont=="MF", ])
+      dev.off()
+    }
+  )
   # ............ ###############################
   # GO table CC DOWN #####################
   output$tableCCdown <- DT::renderDataTable(server=FALSE,{
@@ -1990,7 +2639,20 @@ output$karyoPlot <- renderPlot({
     gosCC <- go$down[go$down$Ont=="CC",]
     plotGO(enrichdf = gosCC[ccrowsdown,], nrows = length(ccrowsdown), ont="CC",
            colors = c(input$downColor) )
+    svg$barccdown <- p
+    plt <- p
+    
+    plt <- plt %>% plotly::ggplotly(tooltip = "all" )
+    plt$height <- myHeightfunction( ccrowsdown() )
+    plt$x$layout$height <- myHeightfunction(ccrowsdown() )
+    plt
   })
+  
+  output$barCcDown <- downloadHandler(
+    filename = "barccdown.svg",
+    content = function(file){
+      ggsave(file, svg$barccdown, "svg", width = 10, units = "in") }
+  )
   # GO CC dotplot down ################### 
   output$CCDotDown <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"),
@@ -1998,15 +2660,32 @@ output$karyoPlot <- renderPlot({
     ccrowsdown <- ccrowsdown()
     if(is.null(ccrowsdown)){ccrowsdown <- c(1:20)}
     gosCC <- go$down[go$down$Ont=="CC",]
-    dotPlotGO(gosCC[ccrowsdown,], n = length(ccrowsdown))
-  })
+    p <- dotPlotGO(gosCC[ccrowsdown,], n = length(ccrowsdown))
+    svg$dotccdown <- p
+    print(p)
+  }, height = reactive( myHeightfunction(ccrowsdown() ) ) )
+  
+  
+  output$dotCcDown <- downloadHandler(
+    filename = "dotccdown.svg",
+    content = function(file){
+      ggsave(file, svg$dotccdown, device = "svg", width = 10, units = "in") }
+  )
   # GO gobarplot CC down #######################
   output$gobarplotDownCC <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
     ccrowsdown <- ccrowsdown()
     goBarplot(enrichGO = go$down, resGO = res$sh, genes= data$genesDown,
               category = "CC", nrows = ccrowsdown)
+    svg$gobarccdown <- p
+    print(p)
   })
+  
+  output$gobarCcDown <- downloadHandler(
+    filename = "gobarccdown.svg",
+    content = function(file){
+      ggsave(file, svg$gobarccdown, device = "svg", width = 10, units = "in") }
+  )
   # GO circle CC Down #####################
   output$goCircleDownCC <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"),
@@ -2015,9 +2694,31 @@ output$karyoPlot <- renderPlot({
     ccrowsdown <- ccrowsdown()
     if(length(ccrowsdown)>=4){
       circ <- data2circle(go=go$down[ccrowsdown, ], res=res$sh, genes=data$genesDown)
-      circle(circ, label.size = 3, nsub = length(ccrowsdown), table.legend = FALSE)
+      p <- circle(circ, label.size = 3, nsub = length(ccrowsdown), table.legend = FALSE)
+      svg$circcdown <- p
+      print(p)
     }
   })
+  output$cirCcDown <- downloadHandler(
+    filename = "circcdown.svg",
+    content = function(file){
+      ggsave(file, svg$circcdown, device = "svg", width = 10, units = "in") }
+  )
+    # GO cloud CC Down #######################
+  output$cloudCCDown <- renderPlot({
+    validate(need(go$down, "Load file to render dotPlot"))
+    godown <- go$down[go$down$Ont=="CC", ]
+    myggwordcloud(godown, bg = "#343e48")
+  })
+  
+  output$cloudccdown <- downloadHandler(
+    filename = "cloudccdown.svg",
+    content = function(file){
+      svg(file, width = 8, height = 6)
+      myggwordcloud(go$down[go$down$Ont=="CC"])
+      dev.off()
+    }
+  )
   # ............ ###############################
   # GSEA table ##########################
   output$gseaTable <- renderDataTable({
@@ -2066,9 +2767,16 @@ output$karyoPlot <- renderPlot({
           content = "Sorry, I didn't get any significant results for this analysis",
           append=FALSE, style = "info")
     } else{
-        enrichplot::gseaplot2(gsea$gsea, geneSetID = gseanr, pvalue_table = TRUE, ES_geom = "line")
+        p <- enrichplot::gseaplot2(gsea$gsea, geneSetID = gseanr, pvalue_table = TRUE, ES_geom = "line")
+        svg$gseaplot <- p
+        print(p)
         }
   })
+  output$gseaButton <- downloadHandler(
+    filename = "gseaplot.svg",
+    content = function(file){
+      ggsave(file, svg$gseaplot, device = "svg", width = 10, units = "in") }
+  )
   # ............ ###############################
   # author name ######################
   #author <- reactive({input$author})
