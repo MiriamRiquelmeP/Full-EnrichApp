@@ -5,7 +5,7 @@ date: "`r format(Sys.time(), '%d %B %Y')`"
 output:
   rmdformats::readthedown:
     highlight: kate
-    css: mystyle.css
+    css: report.css
 params:
   tempdir: NA
   values: NA

@@ -1,44 +1,42 @@
-library(shinydashboard)
 library(AnnotationDbi)
-library(org.Mm.eg.db) #Mus musculus
-library(org.Hs.eg.db) #Homo sapiens
-#library(org.Dr.eg.db) #Danio rerio (zebra fish)
-library(org.Rn.eg.db) #Rattus norvegicus
-#library(org.Mmu.eg.db) #Macaca mulata
 library(chorddiag)
+library(DESeq2)
+library(DT)
 library(EnsDb.Mmusculus.v79)
 library(EnsDb.Hsapiens.v86)
 library(EnsDb.Rnorvegicus.v79)
-library(limma)
-library(tidyverse)
-library(DT)
-library(RColorBrewer)
-library(purrr)
-library(plotly)
-library(ggpubr)
-library(DESeq2)
 library(fgsea)
-library(shinyalert)
-library(shinyBS)
-library(shinyWidgets)
-library(shinydashboardPlus)
-library(pheatmap)
+library(ggpubr)
+library(ggrepel)
+library(grid)
+library(gridExtra)
 library(heatmaply)
-library(shinyjs)
-library(shinythemes)
+library(limma)
+library(mychordplot)
+library(org.Hs.eg.db) #Homo sapiens
+library(org.Mm.eg.db) #Mus musculus
+library(org.Rn.eg.db) #Rattus norvegicus
+library(pheatmap)
+library(plotly)
+library(purrr)
+library(randomcoloR)
+library(RColorBrewer)
 library(rgl)
 library(rglwidget)
 library(scales)
-library(stringr)
+library(shinyalert)
+library(shinyBS)
 library(shinybusy)
-library(visNetwork)
-library(ggrepel)
-library(mychordplot)
+library(shinydashboard)
+library(shinydashboardPlus)
+library(shinyjs)
+library(shinythemes)
+library(shinyWidgets)
+library(stringr)
+library(tidyverse)
 library(tidytext)
+library(visNetwork)
 library(wordcloud)
-library(randomcoloR)
-library(grid)
-library(gridExtra)
 source("utils.R")
 source("updatepopModals.R")
 options(shiny.maxRequestSize = 3000*1024^2)
@@ -129,14 +127,6 @@ body <- dashboardBody(
     setShadow(class = "shiny-plot-output"),
     setShadow( class = "box"),
     setShadow( class = "svg-container"),
-    # shiny::tagList(shiny::tags$head(
-    #     shiny::tags$link(rel = "stylesheet", type = "text/css", href = "busystyle.css"),
-    #     shiny::tags$script(type = "text/javascript", src = "busy.js"))),
-    # div( class = "busy",
-    #     #h4("Loading data, please be patient..."),
-    #     img(src = "dna-svg-small-13.gif", style = "width: 150px"),
-    #     style = "z-index: 99"
-    # ), 
   bsAlert("alert"),
   tabItems(
     # Initial INFO
@@ -341,13 +331,13 @@ server <- function(input, output, session) {
     data$genesDown <- getSigDownregulated(res$sh, padj(), logfc()[1], specie() ) 
     data$genesall <- rbind(data$genesUp, data$genesDown)
     
-    kgg$all <- customKegg(data$genesall, species = specie() ) #"Mm"), species.KEGG = "mmu")
+    kgg$all <- customKegg(data$genesall, species = specie() ) 
     kggDT$all <- kegg2DT(kgg$all, data$genesall)
     
-    kgg$up <- customKegg(data$genesUp, species = specie() ) #"Mm")#, species.KEGG = "mmu")
+    kgg$up <- customKegg(data$genesUp, species = specie() ) 
     kggDT$up <- kegg2DT(kgg$up, data$genesUp)
     
-    kgg$down <- customKegg(data$genesDown, species = specie() ) # "Mm")#, species.KEGG = "mmu")
+    kgg$down <- customKegg(data$genesDown, species = specie() ) 
     kggDT$down <- kegg2DT(kgg$down, data$genesDown)
     
     go$all <- customGO(data$genesall, species = "Mm")
@@ -627,7 +617,6 @@ server <- function(input, output, session) {
     output$testVariable <- renderUI({
         validate(need(countdata$sample,""))
         opciones <- as.list(names(countdata$sample))
-          #names(opciones) <- resultsNames(datos$dds)[-1]
         pickerInput(
           inputId = "testVariablePicker",
           label = "6. Select variable to test",
@@ -730,28 +719,6 @@ server <- function(input, output, session) {
     }
   })
   
-  # # ui selector fc #######################
-  # output$fc <- renderUI({
-  #   validate(need(datos$dds, ""))
-  #   sliderInput("fc", label = "Select FC range to remove (keeps the tails)",
-  #               min=round(fcRange$min,3), max=round(fcRange$max, 3),
-  #               #value = c(round(logfcRange$min,3)+1,round(logfcRange$max,3)-1 ), step = 0.1 )
-  #               value = c(-1.5,1.5), step = 0.1 )
-  # })
-  # 
-  # # ui selector logfc #######################
-  # output$logfc <- renderUI({
-  #   validate(need(datos$dds, ""))
-  #   validate(need(fc(), ""))
-  #   valmin <- ifelse(fc()[1]<0, -log2(abs(fc()[1])), log2(abs(fc()[1])) )
-  #   valmax <- ifelse(fc()[2]<0, -log2(abs(fc()[2])), log2(abs(fc()[2])) )
-  #   sliderInput("logfc", label = "Select logFC range to remove (keeps the tails)",
-  #               min=round(logfcRange$min,3), max=round(logfcRange$max, 3),
-  #               #value = c(round(logfcRange$min,3)+1,round(logfcRange$max,3)-1 ), step = 0.1 )
-  #               value = c(valmin, valmax), #value = c(-0.5,0.5), 
-  #               step = 0.1 )
-  # })
-  
   # ui selector padj #################################
   output$padj <- renderUI({
     validate(need(datos$dds,""))
@@ -837,8 +804,6 @@ server <- function(input, output, session) {
           fgColor = fgColor,
           inputColor = inputColor,
           bgColor = bgColor,
-          #angleArc = 180,
-          #angleOffset = angleOffset,
           width = "80%",
           height = "80%"
       )
@@ -876,8 +841,6 @@ server <- function(input, output, session) {
           fgColor = fgColor,
           inputColor = inputColor,
           bgColor = bgColor,
-          #angleArc = 180,
-          #angleOffset = angleOffset,
           width = "80%",
           height = "80%"
       )
@@ -898,8 +861,6 @@ server <- function(input, output, session) {
           fgColor = fgColor,
           inputColor = inputColor,
           bgColor = bgColor,
-          #angleArc = 180,
-          #angleOffset = 90,
           width = "80%",
           height = "80%"
       )
@@ -1023,8 +984,7 @@ output$pca3d <- renderRglwidget({
     plot3d(x,y,x, size = 2, type="s", col = (d$labels),
            box=FALSE, axes=FALSE, xlab = names(d)[1],
            ylab=names(d)[2], names(d)[3])
-    bg3d(sphere = FALSE, fogtype = "none", color = "#46505a")#"#dadee3" )
-    #rgl.bbox(xlen=0, ylen=0, zlen=0)
+    bg3d(sphere = FALSE, fogtype = "none", color = "#46505a")
     rgl.lines(c(min(x), max(x)), c(0, 0), c(0, 0), color = "white")
     rgl.lines(c(0, 0), c(min(y),max(y)), c(0, 0), color = "white")
     rgl.lines(c(0, 0), c(0, 0), c(min(z),max(z)), color = "white")
@@ -1033,10 +993,8 @@ output$pca3d <- renderRglwidget({
   
   # view Volcano plot data ###################
    output$volcano <- renderPlot( {
-    #validate(need(datos$dds, "Load file and condition to render Volcano"))
     validate(need(res$sh, "Load file to render plot"))
     res <-  res$sh
-    #res$`-log10padj` <- (-log10(res$padj)) 
     svg$volcano <- CustomVolcano(res, lab = as.character(res$GeneName_Symbol),
                   selectLab = genesVolcano(),
                     x = 'log2FoldChange',
@@ -1049,8 +1007,6 @@ output$pca3d <- renderRglwidget({
                     col = c("gray", "#7cccc3", "#d99c01", input$upColor, input$downColor))
     svg$volcano
     })
-    #volcany(res$sh, padj=padj(), fcdown=logfc()[1], fcup=logfc()[2],
-    #        col=c(input$upColor, input$downColor), genes=genesVolcano() )
 output$downVolcano <- downloadHandler(
   filename = "volcano.svg",
   content = function(file){
@@ -1069,7 +1025,6 @@ output$texto1 <- renderTable( digits = -2, {
 
 # view MA plot data ###################
   output$MA <- renderPlot( {
-    #validate(need(datos$dds, ""))
     validate(need(res$sh, "Load file to render plot"),
              need(logfc(), ""))
     svg$maplot <- MA(res$sh, 
@@ -2824,7 +2779,7 @@ output$barKeggAll <- downloadHandler(
       applyPress$ok <- FALSE
       tempReport <- file.path(tempdir(), "report.Rmd")
       file.copy("report.Rmd", tempReport, overwrite = TRUE)
-      file.copy("mystyle.css", file.path(tempdir(), "mystyle.css"), overwrite = TRUE)
+      file.copy("report.css", file.path(tempdir(), "report.css"), overwrite = TRUE)
       file.copy("utilsReport.R", file.path(tempdir(),"utils.R"), overwrite = TRUE)
       file.copy("resources/", tempdir(), overwrite = TRUE, recursive = TRUE)
       file.copy("resources/dna-svg-small-13.gif",

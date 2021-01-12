@@ -2499,7 +2499,7 @@ output$barKeggAll <- downloadHandler(
       file.copy("report.Rmd", tempReport, overwrite = TRUE) }else{
         file.copy("report1col.Rmd", tempReport, overwrite = TRUE)
       }
-      file.copy("mystyle.css", file.path(tempdir(), "mystyle.css"), overwrite = TRUE)
+      file.copy("report.css", file.path(tempdir(), "report.css"), overwrite = TRUE)
       file.copy("utilsReport.R", file.path(tempdir(),"utils.R"), overwrite = TRUE)
       file.copy("resources/", tempdir(), overwrite = TRUE, recursive = TRUE)
       file.copy("resources/dna-svg-small-13.gif",
