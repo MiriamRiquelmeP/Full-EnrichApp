@@ -32,7 +32,10 @@ library(shinydashboardPlus)
 library(shinyjs)
 library(shinythemes)
 library(shinyWidgets)
+<<<<<<< HEAD
 library(shinymanager)
+=======
+>>>>>>> 1741fe21b774ac32274574745cbf94b370406091
 library(stringr)
 library(tidyverse)
 library(tidytext)
