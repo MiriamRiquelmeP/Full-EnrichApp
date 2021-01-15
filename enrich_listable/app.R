@@ -26,6 +26,7 @@ library(pheatmap)
 library(heatmaply)
 library(shinyjs)
 library(shinythemes)
+library(shinymanager)
 library(rgl)
 library(rglwidget)
 library(scales)
@@ -215,10 +216,44 @@ ui <- dashboardPage(title="Rnaseq viewer and report",
                     sidebar,
                     body
 ) # fin del UI
+ui <- secure_app(ui, enable_admin = TRUE, theme = shinythemes::shinytheme("darkly"),
+                 head_auth = HTML("<style>
+                 .panel-auth{
+                                  background-color: #343e48 !important;
+                                  }
+                                  </style>"
+                                  ),
+
+                 tags_bottom = tagList(tags$div(style = "text-align: center;",
+                   tags$image(
+                     height = 40,
+                     src = "mircen.png",
+                     style = "padding-right: 10px; padding-top: 10px;"
+                   ),
+                   tags$image(
+                     height = 50,
+                     src = "imib.png"#,
+                   ))
+                  )
+)
 
 ########################################## SERVER #################################################
 server <- function(input, output, session) {
   
+      res_auth <- secure_server(
+     check_credentials = check_credentials(
+         "pathToUserDataBase",
+         passphrase = readRDS("pathToDataBasePass")
+     )
+   )
+  #res_auth <- secure_server(
+  #   check_credentials = check_credentials(
+  #       "pathToUserDataBase",
+  #       passphrase = readRDS("pathToDataBasePass")
+  #   )
+  # )
+    
+    
     enrichflag=NULL
     
     observeEvent(input$aboutButton, {
@@ -2499,7 +2534,7 @@ output$barKeggAll <- downloadHandler(
       file.copy("report.Rmd", tempReport, overwrite = TRUE) }else{
         file.copy("report1col.Rmd", tempReport, overwrite = TRUE)
       }
-      file.copy("mystyle.css", file.path(tempdir(), "mystyle.css"), overwrite = TRUE)
+      file.copy("report.css", file.path(tempdir(), "report.css"), overwrite = TRUE)
       file.copy("utilsReport.R", file.path(tempdir(),"utils.R"), overwrite = TRUE)
       file.copy("resources/", tempdir(), overwrite = TRUE, recursive = TRUE)
       file.copy("resources/dna-svg-small-13.gif",
