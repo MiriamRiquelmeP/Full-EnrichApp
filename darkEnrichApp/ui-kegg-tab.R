@@ -3,23 +3,13 @@ fluidPage(
         tabPanel( "All DE genes",          # pestaña All #################
             tags$br(),
             fluidRow(  # primera fila
-                column( width = 3,
-                    box(title = h3("Every breath you take. The Police"),
-                        width = "100%",
-                        status = "info",
-                        p("Every breath you take"),
-                        p("Every move you make"),
-                        p("Every bond you break"),
-                        p("Every step you take"),
-                        p("I'll be watching you...")
-                    ) # fin caja para el texto
-                ),
-                column( width = 9,
+                column( width = 9, offset = 2,
                     box(title = "Table of pathways",
                         solidHeader = FALSE,
                         status = "primary",
                         width = NULL,
-                        DTOutput("tableAll")
+                        DTOutput("tableAll"),
+                        actionButton("resettableall", "Clear selection")
                     ) # caja para la tabla
                     )
                 ),
@@ -38,7 +28,7 @@ fluidPage(
                         trigger = "hover",
                         placement = "left"
                     ),
-                    width = 9, offset = 3,
+                    width = 9, offset = 2,
                     tabBox( width = 12, # caja con pestañas para los plots
                             tabPanel(title = "Barplot",
                                     fluidRow(column(
@@ -116,23 +106,13 @@ fluidPage(
         tabPanel( "Upregulated genes",          # pestaña Up ##############
             tags$br(),
             fluidRow(  # primera fila
-                column( width = 3,
-                    box(title = h3("Shiny happy people. REM"),
-                        width = "100%",
-                        status = "info",
-                        p("Meet me in the crowd, people, people"),
-                        p("Throw your love around, love me, love me"),
-                        p("Take it into town, happy, happy"),
-                        p("Put it in the ground where the flowers grow"),
-                        p("Gold and silver shine...")
-                    )
-                ),
-                column( width = 9,
+                column( width = 9, offset = 2,
                     box(title = "Table of pathways",
                         solidHeader = FALSE,
                         status = "primary",
                         width = NULL,
-                        DTOutput("table")
+                        DTOutput("table"),
+                        actionButton("resettable", "Clear selection")
                     ) # caja para la tabla
                     )
                 ),
@@ -151,7 +131,7 @@ fluidPage(
                         trigger = "hover",
                         placement = "left"
                     ),
-                    width = 9, offset = 3,
+                    width = 9, offset = 2,
                     tabBox( width = 12, # caja con pestañas para los plots
                         tabPanel(title = "Barplot",
                                  fluidRow(column(width=3,
@@ -205,22 +185,13 @@ fluidPage(
         tabPanel( "Downregulated genes",   # pestaña Down ##########
             tags$br(),
             fluidRow(  # primera fila
-                column( width = 3,
-                    box(title = h3("Walk of life. Dire Straits"),
-                        width = "100%",
-                        status = "info",
-                        p("Here comes Johnny singing oldies, goldies"),
-                        p("Be-Bop-A-Lula, Baby What I Say"),
-                        p("Here comes Johnny singing, I Gotta Woman"),
-                        p("Down in the tunnels, trying to make it pay..."),
-                    )
-                ),
-                column( width = 9,
+                column( width = 9, offset = 2,
                     box(title = "Table of pathways",
                         solidHeader = FALSE,
                         status = "primary",
                         width = NULL,
-                        DTOutput("tableDown")
+                        DTOutput("tableDown"),
+                        actionButton("resettableDown", "Clear selection")
                     ) # caja para la tabla
                     )
                 ),
@@ -239,7 +210,7 @@ fluidPage(
                         trigger = "hover",
                         placement = "left"
                     ),
-                    width = 9, offset = 3,
+                    width = 9, offset = 2,
                     tabBox( width = 12, # caja con pestañas para los plots
                         tabPanel(title = "Barplot",
                                  fluidRow(column(width=3,

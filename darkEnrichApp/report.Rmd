@@ -76,6 +76,9 @@ params:
   dotgouObj: NA
   gobargouObj: NA
   gocirclegouObj: NA
+  cloudgoaObj: NA
+  cloudgouObj: NA
+  cloudgodObj: NA
   tablegodObj: NA
   bargodObj: NA
   dotgodObj: NA
@@ -106,18 +109,6 @@ params:
   textnotes: NA
 ---
 
-
-```{r results="asis", echo=FALSE}
-cat("
-<style>
-#content {
-  max-width: 1080px;
-  margin-left: 300px;
-  background: #edf0f2;
-}
-</style>
-")
-```
 
 ```{r setup, echo=FALSE, include=FALSE, comment=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, out.width='100%',
@@ -171,6 +162,9 @@ if(is.null(params$gseagsea)){GSEA=FALSE} else{
   if(!is.null(params$values$GSEA) & dim(params$gseagsea@result)[1]!=0)
     { GSEA=TRUE}else{GSEA=FALSE} }
 if(params$textnotes!=""){notes=TRUE}else{notes=FALSE}
+print(params$cloudgoaObj)
+print(params$cloudgouObj)
+print(params$cloudgodObj)
 ```
 
 
@@ -279,6 +273,7 @@ metadata <- as.data.frame(colData(params$datosdds)) %>% dplyr::select(-any_of(c(
                  list(pageLength = 10, white_space = "normal")
                )
     )
+
 ```
 
 ### Statistical expression values

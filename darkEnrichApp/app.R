@@ -13,6 +13,7 @@ library(gridExtra)
 library(heatmaply)
 library(limma)
 library(mychordplot)
+#remotes::install_version("RSQLite", version = "2.2.5")
 library(org.Hs.eg.db) #Homo sapiens
 library(org.Mm.eg.db) #Mus musculus
 library(org.Rn.eg.db) #Rattus norvegicus
@@ -32,10 +33,7 @@ library(shinydashboardPlus)
 library(shinyjs)
 library(shinythemes)
 library(shinyWidgets)
-<<<<<<< HEAD
 library(shinymanager)
-=======
->>>>>>> 1741fe21b774ac32274574745cbf94b370406091
 library(stringr)
 library(tidyverse)
 library(tidytext)
@@ -49,64 +47,59 @@ options(shiny.maxRequestSize = 3000*1024^2)
 header <- dashboardHeader(title = "RNAseq viewer and report App", 
                           titleWidth = 300, 
                           dropdownMenuOutput("messageMenu"),
-                          tags$li(class="dropdown", actionButton("moreinfo","Tutorial",
-                                                                 style = "background-color: #8ec4d9"),
+                          tags$li(class="dropdown", 
+                                  actionButton("notesButton","Report notes"),
                                   style="margin-top:8px; margin-right: 5px"),
-                          tags$li(class="dropdown", actionButton("notesButton","Notes"),
-                                  style="margin-top:8px; margin-right: 5px"),
-                          tags$li(class = "dropdown", actionButton("aboutButton", "About"),
-                                  style="margin-top:8px; margin-right: 15px"),
-                          tags$li(class = "dropdown", actionBttn(inputId = "resetbutton",
-                                             label = "Reset App", style="simple", size="sm",
-                                             color ="danger"),
+                          tags$li(class = "dropdown",
+                                  actionButton("report2", "HTML report"),
                                   style="margin-top:8px; margin-right: 10px"
-                                   )
+                                   ),
+                          tags$li(class="dropdown", 
+                                  actionButton("moreinfo","Credits",
+                                               style = "background-color: #8ec4d9"),
+                                  style="margin-top:8px; margin-right: 5px"),
+                          tags$li(class = "dropdown",
+                                  actionButton("aboutButton", "About",
+                                               style = "background-color: #8ec4d9"),
+                                  style="margin-top:8px; margin-right: 15px")
 )
 ### SIDEBAR ##########
 sidebar <- dashboardSidebar(useShinyalert(),
                             useShinyjs(),
+                            tags$br(),
                             sidebarMenu(id="menupreview",
                               menuItem("App Information",
                                        tabName = "info",
                                        icon = icon("info"))),
-                            sidebarMenu(
-                                menuItem(
-                                    pickerInput(
-                                        inputId = "specie",
-                                        label = "1. Select species",
-                                        choices = list( "Human" = "Hs",
-                                                        "Mouse" = "Mm"),
-                                        options = list(title = "species"),
-                                        selected = NULL
-                                    ) 
-                                )
-                            ),
-                            sidebarMenu(menuItem(uiOutput("matrixDeseq"))),
-                            sidebarMenu(fluidRow(
-                                        column(width=1,menuItem(uiOutput("circleinfoDO"))),
-                                        column(width=11,menuItem(uiOutput("tooltipDO")),
-                                        menuItem(uiOutput("deseqFile"))))),
-                            sidebarMenu(fluidRow(
-                                        column(width=1,menuItem(uiOutput("circleinfoCM"))),
-                                        column(width=11,menuItem(uiOutput("tooltipCM")),
-                                        menuItem(uiOutput("countFile"))))),
-                            sidebarMenu(fluidRow(
-                                        column(width = 11,
-                                          menuItem(uiOutput("sampleFile"))))),
+                            # sidebarMenu(
+                            #     menuItem(
+                            #         pickerInput(
+                            #             inputId = "specie",
+                            #             label = "1. Select species",
+                            #             choices = list( "Human" = "Hs",
+                            #                             "Mouse" = "Mm"),
+                            #             options = list(title = "species"),
+                            #             selected = NULL
+                            #         ) 
+                            #     )
+                            # ),
+                            # sidebarMenu(menuItem(uiOutput("matrixDeseq"))),
+                            # sidebarMenu(fluidRow(
+                            #             column(width=1,menuItem(uiOutput("circleinfoDO"))),
+                            #             column(width=11,menuItem(uiOutput("tooltipDO")),
+                            #             menuItem(uiOutput("deseqFile"))))),
+                            # sidebarMenu(fluidRow(
+                            #             column(width=1,menuItem(uiOutput("circleinfoCM"))),
+                            #             column(width=11,menuItem(uiOutput("tooltipCM")),
+                            #             menuItem(uiOutput("countFile"))))),
+                            # sidebarMenu(fluidRow(
+                            #             column(width = 11,
+                            #               menuItem(uiOutput("sampleFile"))))),
                             sidebarMenu(id="menuimport",sidebarMenuOutput("importvw")),
                             sidebarMenu(id = "previewMenu", sidebarMenuOutput("prevw")),
                             sidebarMenu("", sidebarMenuOutput("menu")),
-                            tags$br(),
-                            sidebarMenu(menuItem(uiOutput("design"))),
-                            box(width = 12,
-                            h5(strong("Generate report"), align = 'center'),
-                              sidebarMenu( 
-                                menuItem(
-                                  fluidRow(column(12, align = "center", offset=0, uiOutput("report"))))),
-                              sidebarMenu(
-                                menuItem(
-                                  fluidRow(column(12, align = "center", offset=0, uiOutput("pdf")))))
-                            ),
+                            # tags$br(),
+                            # sidebarMenu(menuItem(uiOutput("design"))),
                             tags$div(
                             tags$a(href='https://jacob.cea.fr/drf/ifrancoisjacob/Pages/Departements/MIRCen/themes/astrocytes-reactifs-biomarqueurs-imagerie-cibles-therapeutiques.aspx', target="_blank",
                                    tags$img(src='mircen.png',width='50%',
@@ -131,77 +124,49 @@ body <- dashboardBody(
     setShadow(class = "shiny-plot-output"),
     setShadow( class = "box"),
     setShadow( class = "svg-container"),
-  bsAlert("alert"),
-  tabItems(
+    bsAlert("alert"),
+    tabItems(
     # Initial INFO
-    tabItem(tabName = "info",
-            br(),
-            fluidRow(column(offset = 2,width = 9,
-            box(width=10,
-                status = "info",
-                title = h1(strong("Welcome to EnrichApp 2020!") ),
-            h3("Before starting using the app"),
-            p("As a initial files to run the analysis, 
-                the program will import either a counting matrix with a table of sample information 
-                (both in separated excel files) or a DeseqDataSet object, 
-                generated by the DESeq function of the", 
-              a("DESeq2", href="https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html"),
-              "library and compress as a RDS file. 
-              Make sure that your objects matched this and enjoy your enrichment analysis ;)"),
-            br(),
-            h3("Get the app ready to be used!"),
-            p("First of all, select the species of your experiment. 
-              Then the option to choose between entering your count matrix / DESeq object  
-              containing your analysis will be unlocked. Make your choice and upload your files. 
-              Select your conditions and/or design and when the loading symbol stops moving, 
-              you will be moved to the next tab! "
-              ),
-            br(),
-            p("Take advantage of every symbol of info" , icon("info-circle"), "that you might find.
-              It can provide you with information that may be useful for 
-              the proper functioning of the app. "
-            ),
-            br(),
-            h3("How to download the app"),
-            p("This app can be found on ",
-              a("GitHub.", 
-                href = "https://github.com/"))),
-    ) )),
-    # import tab ######
-    tabItem(tabName = "tabimport",
-            source(file = "ui-import-tab.R",
-            local=TRUE,
-            encoding = "UTF-8"
-            )$value),
-    # preview tab ######
-    tabItem(tabName = "preview",
-            source(file = "ui-preview-tab.R",
-            local=TRUE,
-            encoding = "UTF-8"
-            )$value),
-    # kegg tab content #####
-    tabItem(tabName = "kegg",
-            source(file = "ui-kegg-tab.R",
-                   local = TRUE,
-                   encoding = "UTF-8"
-                   )$value),
-    # GO tab GO tab ######
-    tabItem( tabName = "go",
-             source(file = "ui-go-tab.R",
-                    local = TRUE,
-                    encoding = "UTF-8",
-                    )$value),
-    # GSEA tab ######
-    tabItem( tabName = "gsea",
-             source(file = "ui-gsea-tab.R",
-                    local = TRUE,
-                    encoding = "UTF-8",
-                    )$value)
+      tabItem( tabName = "info",
+               source(file = "ui-info-tab.R",
+                      local = TRUE,
+                      encoding = "UTF-8"
+                )$value),
+      # import tab ######
+      tabItem(tabName = "tabimport",
+              source(file = "ui-import-tab.R",
+                     local=TRUE,
+                     encoding = "UTF-8"
+              )$value),
+      # preview tab ######
+      tabItem(tabName = "preview",
+              source(file = "ui-preview-tab.R",
+                     local=TRUE,
+                     encoding = "UTF-8"
+              )$value),
+      # kegg tab content #####
+      tabItem(tabName = "kegg",
+              source(file = "ui-kegg-tab.R",
+                     local = TRUE,
+                     encoding = "UTF-8"
+              )$value),
+      # GO tab GO tab ######
+      tabItem( tabName = "go",
+               source(file = "ui-go-tab.R",
+                      local = TRUE,
+                      encoding = "UTF-8",
+               )$value),
+      # GSEA tab ######
+      tabItem( tabName = "gsea",
+               source(file = "ui-gsea-tab.R",
+                      local = TRUE,
+                      encoding = "UTF-8",
+               )$value)
   ), # fin tab items
     bsModal("modalNotes", "Notes", "notesButton",size="large",
           textAreaInput("textNotes", "Comments", width = "850px", height = "575px", placeholder = "Input comments about your analysis here. What you write will be incorporated into the report. Markdown notation is accepted.\n
 In order to avoid creating first level sections, please use double or triple # to define a section instead of a single #" ))
-)# fin dashboardbody
+) # fin dashboardbody
 
 ########################################## UI #################################################
 
@@ -211,45 +176,38 @@ ui <- dashboardPage(title="Rnaseq viewer and report",
                     body
 ) # fin del UI
 
-ui <- secure_app(ui, enable_admin = TRUE, theme = shinythemes::shinytheme("darkly"),
-                 head_auth = HTML("<style>
-                 .panel-auth{
-                                  background-color: #343e48 !important;
-                                  }
-                                  </style>"
-                                  ),
-                 
-                 tags_bottom = tagList(tags$div(style = "text-align: center;",
-                   tags$image(
-                     height = 40,
-                     src = "mircen.png",
-                     style = "padding-right: 10px; padding-top: 10px;"
-                   ),
-                   tags$image(
-                     height = 50,
-                     src = "imib.png"#,
-                   ))
-                  )
-)
+# ui <- secure_app(ui, enable_admin = TRUE, theme = shinythemes::shinytheme("darkly"),
+#                  head_auth = HTML("<style>
+#                  .panel-auth{
+#                                   background-color: #343e48 !important;
+#                                   }
+#                                   </style>"
+#                                   ),
+#                  tags_bottom = tagList(tags$div(style = "text-align: center;",
+#                    tags$image(
+#                      height = 40,
+#                      src = "mircen.png",
+#                      style = "padding-right: 10px; padding-top: 10px;"
+#                    ),
+#                    tags$image(
+#                      height = 50,
+#                      src = "imib.png"#,
+#                    ))
+#                   )
+#                  )
 ########################################## SERVER #################################################
 server <- function(input, output, session) {
   
-   #es_auth <- secure_server(
-   # check_credentials = check_credentials(
-   #     "pathToUserDataBase",
-   #     passphrase = readRDS("pathToDataBasePass")
-   # )
-   #)
-	#
-  res_auth <- secure_server(
-    check_credentials = check_credentials(
-        "pathToUserDataBase",
-        passphrase = readRDS("pathToDataBasePass")
-    )
-  )
+  # res_auth <- secure_server(
+  #   timeout = 0,
+  #   check_credentials = check_credentials(
+  #       "~/.users/users.sqlite",
+  #       passphrase = readRDS("~/.users/dbpass.Rds")
+  #   )
+  # )
 
   observeEvent(input$aboutButton, {
-    shinyalert("Enrich app 2020", HTML("Authors:<br>
+    shinyalert("Enrich app 2021", HTML("Authors:<br>
     Miriam Riquelme Pérez 
     <a href='https://www.linkedin.com/in/miriam-riquelme-perez/' target='_blank'> 
     <img src='linkedin_little.svg'> </a> <a href='mailto:miriam.riquelmep@gmail.com'>
@@ -262,9 +220,6 @@ server <- function(input, output, session) {
                imageUrl = "dna-svg-small-13.gif", 
                imageWidth = 200, imageHeight = 100, html=TRUE)})
 
-  observeEvent(input$resetbutton,{
-    session$reload()
-  })
   
   observeEvent(input$moreinfo,{
     showModal(
@@ -295,6 +250,8 @@ server <- function(input, output, session) {
   vals <- reactiveValues()
   vsd <- reactiveValues()
   svg <- reactiveValues()
+  padjNA <- reactiveValues()
+  conversion <- reactiveValues()
   
   observeEvent(input$deseqFile, {
       datos$dds <- readRDS(input$deseqFile$datapath)
@@ -325,8 +282,8 @@ server <- function(input, output, session) {
     if(input$testAlgorithmPicker == "wald"){
       datos$dds <- DESeq(deseqObj, test = "Wald")
     }
-    if(input$testAlgorithmPicker == "ltr"){
-      datos$dds <- DESeq(deseqObj, test = "LTR", reduced = ~1, parallel = TRUE)
+    if(input$testAlgorithmPicker == "lrt"){
+      datos$dds <- DESeq(deseqObj, test = "LRT", reduced = ~1, parallel = TRUE)
       }
   })
   # Acciones al cargar fichero deseq ##########################
@@ -336,22 +293,31 @@ server <- function(input, output, session) {
           colData(datos$dds)@listData <- colData(datos$dds)@listData %>%
               as.data.frame() %>% mutate_at(vars(-sizeFactor, contains('replaceable')), as.character) %>% ##aqui##
               mutate_at(vars(-sizeFactor, contains('replaceable')), as.factor) %>% as.list()
-        res$sh <- as.data.frame(lfcShrink(datos$dds, coef=(as.numeric(design())+1), type="apeglm", parallel = TRUE))
-        res$sh <- res$sh[!is.na(res$sh$padj),]
-        conversion <- geneIdConverter(rownames(res$sh), specie() )
+        #res$sh <- as.data.frame(lfcShrink(datos$dds, coef=(as.numeric(design())+1), type="apeglm", parallel = TRUE))
+        res$sh <- as.data.frame(results(datos$dds, contrast = list(resultsNames(datos$dds)[as.numeric(design())+1] ))) #09/02/2020
+        res$sh <- res$sh %>% dplyr::select(-stat) #09/02/2020
+        conversion$ids <- geneIdConverter2(rownames(res$sh), specie() )
+        padjNA$true <- which(is.na(res$sh$padj)) 
+        if(length(padjNA$true)!=0 ){
+          conversionRes <- conversion$ids[-padjNA$true,]
+          res$sh <- res$sh[-padjNA$true,]
+        }else{
+          conversionRes <- conversion$ids
+        }
         res$sh$baseMean <- round(res$sh$baseMean,4)
         res$sh$lfcSE <- round(res$sh$lfcSE,4)
         res$sh$log2FoldChange <- round(res$sh$log2FoldChange,4)
-        res$sh <- cbind(`Description`=conversion$description, res$sh)
-        res$sh <- cbind(`ENTREZ`=conversion$ENTREZID, res$sh)
-        res$sh <- cbind(`GeneName_Symbol`=conversion$consensus, res$sh)
-        #res$sh$padj <- res$sh$pvalue  ##
+        res$sh <- cbind(`Description`=conversionRes$description, res$sh)
+        res$sh <- cbind(`ENTREZ`=conversionRes$ENTREZID, res$sh)
+        res$sh <- cbind(`ENSEMBL` = conversionRes$ENSEMBL, res$sh)
+        #res$sh <- cbind(`GeneName_Symbol`=conversion$consensus, res$sh)
+        res$sh <- cbind(`GeneName_Symbol`=conversionRes$SYMBOL, res$sh) #
         res$sh <-  res$sh %>% dplyr::select(-c(pvalue))
         if(specie() == "Mm" ){spc = "Mus_musculus"}
         else {spc = "Homo_sapiens"}
         links = paste0("<a href='http://www.ensembl.org/",spc,"/Gene/Summary?db=core;g=",
                        rownames(res$sh),"' target='_blank'>",rownames(res$sh),"</a>")
-        res$sh <- cbind(`GeneName_Ensembl`= links, res$sh)
+        res$sh <- cbind(`User_GeneId`= links, res$sh)
         res$lostgene <- length(which(is.na(res$sh$ENTREZ)))
         vsd$data <- vst(datos$dds)
         rlog$datos <- rlog(datos$dds)
@@ -378,13 +344,13 @@ server <- function(input, output, session) {
     kgg$down <- customKegg(data$genesDown, species = specie() ) 
     kggDT$down <- kegg2DT(kgg$down, data$genesDown)
     
-    go$all <- customGO(data$genesall, species = "Mm")
+    go$all <- customGO(data$genesall, species = specie() )
     goDT$all <- go2DT(enrichdf = go$all, data = data$genesall )
     
-    go$up <- customGO(data$genesUp, species = "Mm")
+    go$up <- customGO(data$genesUp, species = specie() )
     goDT$up <- go2DT(enrichdf = go$up, data = data$genesUp )
     
-    go$down <- customGO(data$genesDown, species = "Mm")
+    go$down <- customGO(data$genesDown, species = specie() )
     goDT$down <- go2DT(enrichdf = go$down, data = data$genesDown )
     updateTabItems(session, "previewMenu", "preview")
   })
@@ -508,7 +474,7 @@ server <- function(input, output, session) {
       output$countFile <- renderUI({
       validate(need(input$matrixDeseq =="cm", ""))
       fileInput("countFile",
-          "3. Choose file with counts",
+          "3.1. Choose file with counts",
           placeholder = "Counts",
           accept = c(".txt", ".tsv", ".xlsx") )
   })
@@ -528,7 +494,7 @@ server <- function(input, output, session) {
       output$sampleFile <- renderUI({
       validate(need(input$matrixDeseq =="cm", ""))  
       fileInput("sampleFile",
-          "4. Choose file with sample data",
+          "3.2. Choose file with sample data",
           placeholder = "Sample",
           accept = c(".txt", ".tsv", ".xlsx") )
   })
@@ -552,7 +518,7 @@ server <- function(input, output, session) {
       samplesCount <- sort(colnames(countdata$count))
       samplesSample <- sort(countdata$sample[,1])
       if( is_empty(which(samplesSample != samplesCount ) )){
-        countdata$count <- countdata$count %>% select(countdata$sample[,1])
+        countdata$count <- countdata$count %>% dplyr::select(countdata$sample[,1])
         validateCountData$ok = TRUE
       } else {
       shinyalert("Sorry!!", "At least one sample name is inconsistent between the two tables", type = "error")
@@ -587,20 +553,37 @@ server <- function(input, output, session) {
           accept = ".Rds")
   })
   
-  # InputDesign ###########################
+  # InputDesign de objeto deseq ###########################
   output$design <- renderUI({
         validate(need(datos$dds,""))
           opciones <- as.list(seq_len(length(resultsNames(datos$dds)[-1] )))
           names(opciones) <- resultsNames(datos$dds)[-1]
           pickerInput(
           inputId = "designPicker",
-          label = "Select design",
+          label = "4. Select design",
           choices = opciones,
           options = list(title = "Design"),
           selected = NULL
-        ) 
+          ) 
           })
   
+  # InputDesign de countMatrix y countData
+    output$designMatrix <- renderUI({
+      validate(need(datos$dds,""),
+               need(countdata$sample,""),
+               need(countdata$count,""))
+      opciones <- as.list(seq_len(length(resultsNames(datos$dds)[-1] )))
+      names(opciones) <- resultsNames(datos$dds)[-1]
+      pickerInput(
+        inputId = "designPicker",
+        label = "4. Select design",
+        choices = opciones,
+        options = list(title = "Design"),
+        selected = NULL
+      )
+    })
+    
+    
   # side bar menu ####################
   output$menu <- renderMenu({
       validate(need(kgg$all, ""))
@@ -633,9 +616,10 @@ server <- function(input, output, session) {
   output$importvw <- renderMenu({
     validate(need(countdata$sample,""),
              need(countdata$count,""))
+    sidebarMenu(
     menuItem("5. Import view",
              tabName = "tabimport",
-             icon = icon("file-import"))
+             icon = icon("file-import")))
   })
   # ui selector sample groups ###################
   output$sampleGroup <- renderUI({
@@ -671,7 +655,7 @@ server <- function(input, output, session) {
       )
     HTML(paste0(tags$p("Select Wald's test or Likelihood Ratio Test."),
     tags$p("Wald's test performs pairwise test using first category as reference."),
-    tags$p("LTR performs comparison between full and reduced model"),tags$br()
+    tags$p("LRT performs comparison between full and reduced model"),tags$br()
     ))
   })
   # testAlgorithm #################
@@ -683,7 +667,7 @@ server <- function(input, output, session) {
     pickerInput(
           inputId = "testAlgorithmPicker",
           label = "7. Select test",
-          choices = list("Wald" = "wald", "LTR" = "ltr"),
+          choices = list("Wald" = "wald", "LRT" = "lrt"),
           options = list(title = "Test"),
           selected = NULL
         )
@@ -760,7 +744,7 @@ server <- function(input, output, session) {
   # ui selector padj #################################
   output$padj <- renderUI({
     validate(need(datos$dds,""))
-    sliderInput("padj", label = "Select p-adjusted threshold", min = 0, max=0.2,
+    sliderInput("padj", label = "Select p-adjusted threshold", min = 0, max=0.5,
                 value=0.05, step = 0.005 )
   })
   # ui selector Colores para PCA y demás #######################
@@ -905,7 +889,7 @@ server <- function(input, output, session) {
   })
 
   # preview table ###################
-  output$preview <- DT::renderDT(server=FALSE,{
+  output$preview <- DT::renderDT({
     validate(need(datos$dds, "Load file to render table"),
              need(res$sh, "Load file to render table"))
     res.sh <- res$sh
@@ -918,9 +902,10 @@ server <- function(input, output, session) {
       list(extend = "copy", title=tituloTabla),
       list(extend="collection", buttons = c("csv", "excel"),
            text="Download", filename="expressionValues", title=tituloTabla ) )
-
+    res.sh <- res.sh %>% dplyr::select(-lfcSE) 
     datatable( res.sh, extensions = "Buttons", escape = FALSE,
                rownames = FALSE,
+               colnames = c("User GeneID","SYMBOL","ENSEMBL","ENTREZ","Description","baseMean","log2FoldChange","pAdj"),
                filter = list(position="top", clear=FALSE),
                options = list(order = list(list(7, 'asc')),
                  lengthMenu = list(c(10,25,50,100,-1), c(10,25,50,100,"All")),
@@ -929,9 +914,10 @@ server <- function(input, output, session) {
                                         targets = 1),
                                    list(className = "dt-right", targets = 1:(ncol(res.sh)-1))
                  ),
+                 scrollY = "400px",
                  rowCallback = JS(
                    "function(row, data) {",
-                   "for (i = 6; i < 8; i++) {",
+                   "for (i = 6; i < 9; i++) {",
                    "if (data[i]>1000 | data[i]<1){",
                    "$('td:eq('+i+')', row).html(data[i].toExponential(3));",
                    "}",
@@ -941,11 +927,19 @@ server <- function(input, output, session) {
                  buttons = customButtons,
                  list(pageLength = 10, white_space = "normal")
                )
-    )
+    )   %>% 
+      formatStyle('log2FoldChange',
+                      backgroundColor = styleInterval(0,  c(input$downColor,input$upColor) ) ) %>% 
+      formatStyle('baseMean', background = styleColorBar(res.sh$baseMean, "#357E43") )
   })
   
   output$lostgenes <- renderText({
     print( paste0(res$lostgene," out of ", dim(res$sh)[1], " have no ENTREZ ID. These genes will be missing in enrichment analysis"))
+  })
+  
+  tableProxy <- dataTableProxy("preview")
+  observeEvent(input$resetrow, {
+    tableProxy %>% selectRows(NULL)
   })
   
 # preview samples ###################
@@ -984,17 +978,30 @@ output$pca3 <- renderUI({
       }
   })
 
+output$dimensions <- renderUI({
+    #validate(need(ndmax(),""))
+    if( ncol(assay(rlog$datos) ) < 5 ){
+      ndmax=ncol(assay(rlog$datos))
+    }else{
+      ndmax <- 5
+    }
+    selectizeInput("ndmax", "Select dimensions to plot", choices = seq_len(ndmax),
+                   multiple = TRUE, selected = c(1,2), options = list(maxItems=2))
+  })
+  
 output$pca <- renderPlotly({
     validate(need(!isTRUE(pca3d()), ""),
              need(datos$dds, ""),
              need(variables(), "Select condition to render PCA"),
              need(samplename(), ""),
-             need(coloresPCA$colores(), ""))
+             need(coloresPCA$colores(), ""),
+             need(length(input$ndmax)==2, ""))
     p <- plotPCA(
         rlog$datos,
         intgroup = variables(),
         labels = samplename(),
-        customColor = coloresPCA$colores()
+        customColor = coloresPCA$colores(),
+        axes = as.numeric(input$ndmax)
     ) +
         theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm")) +
         scale_size_manual(values = 3) +
@@ -1009,26 +1016,26 @@ output$downPCA <- downloadHandler(
     ggsave(file, svg$pca, "svg", units = "in", width = 10, height = 10)}
 )
 
-output$pca3d <- renderRglwidget({
-    validate(need(datos$dds, ""),
-             need(variables(),"Select condition to render PCA" ),
-             need(coloresPCA$colores(), "" ))
-    d <- pca3dplot(rlog$datos, intgroup = variables(), ntop = 500,
-                   returnData = TRUE )
-    levels(d$labels) <- coloresPCA$colores()
-    try(rgl.close(), silent = TRUE)
-    rgl.open(useNULL = TRUE) 
-    x = d$PC1; y = d$PC2; z = d$PC3
-    plot3d(x,y,x, size = 2, type="s", col = (d$labels),
-           box=FALSE, axes=FALSE, xlab = names(d)[1],
-           ylab=names(d)[2], names(d)[3])
-    bg3d(sphere = FALSE, fogtype = "none", color = "#46505a")
-    rgl.lines(c(min(x), max(x)), c(0, 0), c(0, 0), color = "white")
-    rgl.lines(c(0, 0), c(min(y),max(y)), c(0, 0), color = "white")
-    rgl.lines(c(0, 0), c(0, 0), c(min(z),max(z)), color = "white")
-    rglwidget()
-  })
-  
+# output$pca3d <- renderRglwidget({
+#     validate(need(datos$dds, ""),
+#              need(variables(),"Select condition to render PCA" ),
+#              need(coloresPCA$colores(), "" ))
+#     d <- pca3dplot(rlog$datos, intgroup = variables(), ntop = 500,
+#                    returnData = TRUE )
+#     levels(d$labels) <- coloresPCA$colores()
+#     try(rgl.close(), silent = TRUE)
+#     rgl.open(useNULL = TRUE) 
+#     x = d$PC1; y = d$PC2; z = d$PC3
+#     plot3d(x,y,x, size = 2, type="s", col = (d$labels),
+#            box=FALSE, axes=FALSE, xlab = names(d)[1],
+#            ylab=names(d)[2], names(d)[3])
+#     bg3d(sphere = FALSE, fogtype = "none", color = "#46505a")
+#     rgl.lines(c(min(x), max(x)), c(0, 0), c(0, 0), color = "white")
+#     rgl.lines(c(0, 0), c(min(y),max(y)), c(0, 0), color = "white")
+#     rgl.lines(c(0, 0), c(0, 0), c(min(z),max(z)), color = "white")
+#     rglwidget()
+#   })
+#   
   # view Volcano plot data ###################
    output$volcano <- renderPlot( {
     validate(need(res$sh, "Load file to render plot"))
@@ -1104,9 +1111,9 @@ output$texto2 <- renderTable( digits = -2, {
              need(variables(),"Load condition to render plot" ),
              need(samplename(),"Load condition to render plot" ) )
     p <- heat2(vsd$data, n=numheatmap(), intgroup = variables(), sampleName = samplename(),
-         specie=specie(), customColor = coloresPCA$colores() )
+         specie=specie(), customColor = coloresPCA$colores(), annot=conversion$ids )
     q <- heat2(vsd$data, n=numheatmap(), intgroup = variables(), sampleName = samplename(),
-               specie=specie(), customColor = coloresPCA$colores(), ggplt = TRUE )
+               specie=specie(), customColor = coloresPCA$colores(), ggplt = TRUE, annot=conversion$ids )
     svg$heat <- q
     print(p)
   })
@@ -1175,22 +1182,27 @@ output$downTopsix <- downloadHandler(
              need(coloresPCA$colores(), ""),
              need(gene(), "Enter a gene of interest in Ensembl or symbol name"))
     gene <- gene()
-    if (grepl("^ENS", gene, ignore.case = TRUE)) {
-        gene <- toupper(gene)
-        z <- plotCounts(dds = datos$dds,gene = gene, returnData = TRUE,
-                        intgroup = variables()[1])
-        symbol = as.character(res$sh$GeneName_Symbol[rownames(res$sh) == gene])
-    } else{
-        if (specie() == "Mm") {
-            gene <- stringr::str_to_title(gene)
-        }
-        else{
-            gene = toupper(gene)
-        }
-        z <- plotCountsSymbol(dds = datos$dds, gene = gene, returnData = TRUE,
-                              intgroup = variables()[1], specie=specie())
-        symbol <- gene
-    }
+    generow <- which(conversion$ids == gene, arr.ind = TRUE)[1,1] #07/02/2021
+    gene <- conversion$ids[generow,1] #07/02/2021
+    z <- plotCounts(dds = datos$dds,gene = gene, returnData = TRUE,
+                    intgroup = variables()[1]) #07/02/2021
+    symbol <- conversion$ids$SYMBOL[generow] #07/02/2021
+    # if (grepl("^ENS", gene, ignore.case = TRUE)) {
+    #     gene <- toupper(gene)
+    #     z <- plotCounts(dds = datos$dds,gene = gene, returnData = TRUE,
+    #                     intgroup = variables()[1])
+    #     symbol = as.character(res$sh$User_GeneId[rownames(res$sh) == gene])
+    # } else{
+    #     if (specie() == "Mm") {
+    #         gene <- stringr::str_to_title(gene)
+    #     }
+    #     else{
+    #         gene = toupper(gene)
+    #     }
+    #     z <- plotCountsSymbol(dds = datos$dds, gene = gene, returnData = TRUE,
+    #                           intgroup = variables()[1], specie=specie())
+    #     symbol <- gene
+    # }
     z <- z %>% group_by(!!as.name(variables()[1])) %>%
         mutate(mean = round(mean(count),2), sem = round(sd(count)/sqrt(n()),3 ), n = n() ) %>% 
         mutate(text = paste0("Mean: ",mean,"\n","SEM: ",sem))
@@ -1205,6 +1217,11 @@ output$downTopsix <- downloadHandler(
         texto <- as.data.frame(unique(z[ ,c(variables()[1],"text") ] ))
         txt <- paste0(apply(texto, 1, function(x){x} ), collapse = "<br/><br/>")
         txt <- gsub("\n","<br/>",txt)
+        gene_fc_padj <- res$sh[which(res$sh==gene, arr.ind = TRUE)[1], c("log2FoldChange","padj")]
+        txt <- paste0("Log2FC: ",round(gene_fc_padj[1],2),
+                      "<br/>","Padj: ", 
+                      format(gene_fc_padj[2], digits=3, scientific=TRUE),
+                      "<br/><br/>",txt)
         tags$h5(HTML(txt))
     })
     svg$topone <- p
@@ -1217,17 +1234,17 @@ output$downTopone <- downloadHandler(
     ggsave(file, svg$topone, "svg", units = "in", width = 10, height = 10)}
 )
 ## karyoplot ######################################
-output$karyoPlot <- renderPlot({
+output$karyoPlot <- renderPlot(bg = "#46505a", {
     validate(need(res$sh, "Load file to render plot"))
     krtp(res$sh, specie = specie(), pval = padj(), fcdown = logfc()[1],
-         fcup = logfc()[2], bg="#46505a", coldown="#4ADBFF" , colup="#f7665c")
+         fcup = logfc()[2], bg="#46505a", coldown=input$downColor , colup=input$upColor )
 })
 output$downKrpt <- downloadHandler(
   filename = "karyoplot.png",
   content = function(file){
     png(file)
     krtp(res$sh, specie = specie(), pval = padj(), fcdown = logfc()[1],
-         fcup = logfc()[2], bg="#46505a", coldown="#4ADBFF" , colup="#f7665c")
+         fcup = logfc()[2], bg="#46505a", coldown= input$downColor , colup=input$upColor )
     dev.off()
   }
 )
@@ -1279,12 +1296,19 @@ myHeightfunction <- function(filas) {
       escape = FALSE,
       opts = list(order = list(list(5, 'asc')),
         pageLength = 10, white_space = "normal",
+        scrollY = "400px",
         buttons = customButtons
         ) )
   }) 
+
+  tableallProxy <- dataTableProxy("tableAll")
+  observeEvent(input$resettableall, {
+    tableallProxy %>% selectRows(NULL)
+  })
 # KEGG barplot All ################
   output$keggPlotAll <- renderPlotly({
-    validate(need(kgg$all, "Load file to render BarPlot"))
+    validate(need(kgg$all, "Load file to render BarPlot"),
+             need(rowsAll(), "Select the paths of interest to render BarPlot") )
     rowsAll <- rowsAll()
     if(is.null(rowsAll)){
         if( dim(kgg$all)[1]<10 ){rowsAll <-  seq_len(nrow(kgg$all)) }
@@ -1313,7 +1337,8 @@ output$barKeggAll <- downloadHandler(
 )
   # KEGG chordiag plot All ###############
   output$keggChordAll <- renderMychordplot({
-    validate(need(kgg$all, "Load file to render ChordPlot"))
+    validate(need(kgg$all, "Load file to render ChordPlot"),
+             need(length(rowsAll())>2, "Select the paths of interest to render ChordPlot"))
     rowsAll <- rowsAll()
     if(is.null(rowsAll)){
         if( dim(kgg$all)[1]<10 ){rowsAll <-  seq_len(nrow(kgg$all)) }
@@ -1323,8 +1348,9 @@ output$barKeggAll <- downloadHandler(
     #chordPlot(kgg$all[rowsAll, ], nRows = length(rowsAll), orderby = "P.DE")
   })
 
-  output$legendChorAll <- renderPlot({
-    validate(need(kgg$all, "Load file to render ChordPlot"))
+  output$legendChorAll <- renderPlot(bg = "#37414b",{
+    validate(need(kgg$all, "Load file to render ChordPlot"),
+             need(length(rowsAll())>2, "Select the paths of interest to render ChordPlot") )
     rowsAll <- rowsAll()
     if(is.null(rowsAll)){
         if( dim(kgg$all)[1]<10 ){rowsAll <-  seq_len(nrow(kgg$all)) }
@@ -1429,11 +1455,18 @@ output$barKeggAll <- downloadHandler(
       escape = FALSE,
       opts = list(order = list(list(5, 'asc')),
         pageLength = 10, white_space = "normal",
+        scrollY = "400px",
         buttons = customButtons))
   }) 
+  
+  tableProxy <- dataTableProxy("table")
+  observeEvent(input$resettable, {
+    tableProxy %>% selectRows(NULL)
+  })
   # KEGG barplot up################
   output$keggPlot <- renderPlotly ({
-    validate(need(kgg$up, "Load file to render BarPlot"))
+    validate(need(kgg$up, "Load file to render BarPlot"), 
+             need(rowsUp(), "Select the paths of interest to render BarPlot"))
     rowsUp <- rowsUp()
     if(is.null(rowsUp)){
         if( dim(kgg$up)[1]<10 ){rowsUp <-  seq_len(nrow(kgg$up)) }
@@ -1455,17 +1488,18 @@ output$barKeggAll <- downloadHandler(
   )
   # KEGG chordiag plot up ###############
   output$keggChord <- renderMychordplot({
-    validate(need(kgg$up, "Load file to render ChordPlot"))
+    validate(need(kgg$up, "Load file to render ChordPlot"),
+             need(length(rowsUp())>2, "Select the paths of interest to render ChordPlot"))
     rowsUp<- rowsUp()
     if(is.null(rowsUp)){
         if( dim(kgg$up)[1]<10 ){rowsUp <-  seq_len(nrow(kgg$up)) }
         else{ rowsUp <-  seq_len(10)  }
     }
     mychordplot(kgg$up[rowsUp, c("Pathway","genes") ], div="keggChord" )
-    #chordPlot(kgg$up[rowsUp, ], nRows = length(rowsUp), orderby = "P.DE")
   })
- output$legendChorUp <- renderPlot({
-    validate(need(kgg$up, "Load file to render ChordPlot"))
+ output$legendChorUp <- renderPlot(bg = "#37414b",{
+    validate(need(kgg$up, "Load file to render ChordPlot"),
+             need(length(rowsUp())>2, "Select the paths of interest to render ChordPlot"))
     rowsUp <- rowsUp()
     if(is.null(rowsUp)){
         if (dim(kgg$up)[1] < 10) {rowsUp <-  seq_len(nrow(kgg$up))}
@@ -1560,11 +1594,19 @@ output$barKeggAll <- downloadHandler(
       escape = FALSE,
       opts = list(order = list(list(5, 'asc')),
         pageLength = 10, white_space = "normal",
+        scrollY = "400px",
         buttons = customButtons))
   }) 
+  
+  tableDownProxy <- dataTableProxy("tableDown")
+  observeEvent(input$resettableDown, {
+    tableDownProxy %>% selectRows(NULL)
+  })
+  
   # KEGG barplot down ################
   output$keggPlotDown <- renderPlotly ({
-    validate(need(kgg$down, "Load file to render BarPlot"))
+    validate(need(kgg$down, "Load file to render BarPlot"),
+             need(rowsdown(), "Select the paths of interest to render BarPlot"))
       rowsdown <- rowsdown()
     if(is.null(rowsdown)){
         if( dim(kgg$down)[1]<10 ){rowsdown <-  seq_len(nrow(kgg$down)) }
@@ -1587,7 +1629,8 @@ output$barKeggAll <- downloadHandler(
   )
   # KEGG chordiag plot down ###############
   output$keggChordDown <- renderMychordplot({
-    validate(need(kgg$down, "Load file to render ChordPlot"))
+    validate(need(kgg$down, "Load file to render ChordPlot"),
+             need(length(rowsdown())>2, "Select the paths of interest to render ChordPlot"))
     rowsdown <- rowsdown()
     if(is.null(rowsdown)){
         if( dim(kgg$down)[1]<10 ){rowsdown <-  seq_len(nrow(kgg$down)) }
@@ -1596,8 +1639,9 @@ output$barKeggAll <- downloadHandler(
     mychordplot(kgg$down[rowsdown, c("Pathway","genes") ], div="keggChordDown" )
     #chordPlot(kgg$down[rowsdown, ], nRows = length(rowsdown), orderby = "P.DE")
   })
-  output$legendChorDown <- renderPlot({
-    validate(need(kgg$down, "Load file to render ChordPlot"))
+  output$legendChorDown <- renderPlot(bg = "#37414b",{
+    validate(need(kgg$down, "Load file to render ChordPlot"),
+             need(length(rowsdown())>2, "Select the paths of interest to render ChordPlot"))
     rowsdown <- rowsdown()
     if(is.null(rowsdown)){
         if( dim(kgg$down)[1]<10 ){rowsdown <-  seq_len(nrow(kgg$down)) }
@@ -1692,11 +1736,17 @@ output$barKeggAll <- downloadHandler(
                escape = FALSE,
                opts = list(order = list(list(6, 'asc')),
                  pageLength = 10, white_space = "normal",
+                 scrollY = "400px",
                  buttons = customButtons))
+  })
+  tableBPallProxy <- dataTableProxy("tableBPall")
+  observeEvent(input$resettableBPall, {
+    tableBPallProxy %>% selectRows(NULL)
   })
   # GO plots BP all #####################
   output$plotBPall <- renderPlotly({
-    validate(need(go$all, "Load file to render plot"))
+    validate(need(go$all, "Load file to render plot"),
+             need(bprowsall(), "Select at least one row to plot") )
     bprowsall <- bprowsall()
     if(is.null(bprowsall)){bprowsall <- c(1:10)}
     gosBP <- go$all[go$all$Ont=="BP",]
@@ -1740,7 +1790,8 @@ output$barKeggAll <- downloadHandler(
   )
   # GO gobarplot BP all #######################
   output$gobarplotAllBP <- renderPlot({
-    validate(need(go$all, "Load file to render dotPlot"))
+    validate(need(go$all, "Load file to render dotPlot"), 
+             need(length(bprowsall())>=2, "Select at least 2 row" ) )
     bprowsall <- bprowsall()
     p <- goBarplot(enrichGO = go$all, resGO = res$sh, genes= data$genesall,
               category = "BP", nrows = bprowsall)
@@ -1757,7 +1808,7 @@ output$barKeggAll <- downloadHandler(
   output$goCircleAllBP <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"),
              need(res$sh,""),
-             need( bprowsall() , "Select at least 4 rows"))
+             need( length(bprowsall())>=4 , "Select at least 4 rows"))
     bprowsall <- bprowsall()
     if(length(bprowsall)>=4){
       circ <- data2circle(go=go$all[bprowsall, ], res=res$sh, genes=data$genesall)
@@ -1774,7 +1825,7 @@ output$barKeggAll <- downloadHandler(
   # GO cloud BP all #######################
   output$cloudBPAll <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
-    goall <- go$all[go$all$Ont=="BP", ]
+    goall <- go$all[go$all$Ont=="BP" & go$all$level>=input$bpallLevel, ]
     myggwordcloud(goall, bg = "#343e48")
   })
   
@@ -1782,7 +1833,7 @@ output$barKeggAll <- downloadHandler(
     filename = "cloudbpall.svg",
     content = function(file){
       svg(file, width = 8, height = 6)
-      myggwordcloud(go$all[go$all$Ont=="BP", ])
+      myggwordcloud(go$all[go$all$Ont=="BP" & go$all$level>=input$bpallLevel, ])
       dev.off()
     }
   )
@@ -1808,12 +1859,18 @@ output$barKeggAll <- downloadHandler(
                opts = list(order = list(list(6, 'asc')),
                            pageLength = 10, white_space = "normal",
                            buttons = customButtons,
+                           scrollY = "400px",
                            ajax = list(serverSide = TRUE, processing = TRUE))
     )
   })
+  tableMFallProxy <- dataTableProxy("tableMFall")
+  observeEvent(input$resettableMFall, {
+    tableMFallProxy %>% selectRows(NULL)
+  })
   # GO plots MF all  #####################
   output$plotMFall <- renderPlotly({
-    validate(need(go$all, "Load file to render plot"))
+    validate(need(go$all, "Load file to render plot"),
+             need(mfrowsall(), "Select at least one row to plot") )
     mfrowsall <- mfrowsall()
     if(is.null(mfrowsall)){mfrowsall <- c(1:10)}
     gosMF <- go$all[go$all$Ont=="MF",]
@@ -1858,7 +1915,8 @@ output$barKeggAll <- downloadHandler(
   )
   # GO gobarplot MF all ####################
   output$gobarplotAllMF <- renderPlot({
-    validate(need(go$all, "Load file to render dotPlot"))
+    validate(need(go$all, "Load file to render dotPlot"),
+             need(length(mfrowsall())>=2, "Select at least 2 row"))
     mfrowsall <- mfrowsall()
     p <- goBarplot(enrichGO = go$all, resGO = res$sh, genes= data$genesall,
               category = "MF", nrows = mfrowsall)
@@ -1875,7 +1933,7 @@ output$barKeggAll <- downloadHandler(
   output$goCircleAllMF <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"),
              need(res$sh,""),
-             need( mfrowsall() , "Select at least 4 rows"))
+             need( length(mfrowsall())>=4 , "Select at least 4 rows"))
     mfrowsall <- mfrowsall()
     if(length(mfrowsall)>=4){
       circ <- data2circle(go=go$all[mfrowsall, ], res=res$sh, genes=data$genesall)
@@ -1892,7 +1950,7 @@ output$barKeggAll <- downloadHandler(
   # GO cloud MF all #######################
   output$cloudMFAll <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
-    goall <- go$all[go$all$Ont=="MF", ]
+    goall <- go$all[go$all$Ont=="MF" & go$all$level>=input$mfallLevel, ]
     myggwordcloud(goall, bg = "#343e48")
   })
   
@@ -1900,7 +1958,7 @@ output$barKeggAll <- downloadHandler(
     filename = "cloudmfall.svg",
     content = function(file){
       svg(file, width = 8, height = 6)
-      myggwordcloud(go$all[go$all$Ont=="MF", ])
+      myggwordcloud(go$all[go$all$Ont=="MF" & go$all$level>=input$mfallLevel, ])
       dev.off()
     }
   )
@@ -1926,12 +1984,18 @@ output$barKeggAll <- downloadHandler(
                opts = list(order = list(list(6, 'asc')),
                            pageLength = 10, white_space = "normal",
                            buttons = customButtons,
+                           scrollY = "400px",
                            ajax = list(serverSide = TRUE, processing = TRUE))
     )
   })
+  tableCCallProxy <- dataTableProxy("tableCCall")
+  observeEvent(input$resettableCCall, {
+    tableCCallProxy %>% selectRows(NULL)
+  })
   # GO plots CC all #####################
   output$plotCCall <- renderPlotly({
-    validate(need(go$all, "Load file to render plot"))
+    validate(need(go$all, "Load file to render plot"),
+             need(ccrowsall(), "Select at least one row to plot") )
     ccrowsall <- ccrowsall()
     if(is.null(ccrowsall)){ccrowsall <- c(1:10)}
     gosCC <- go$all[go$all$Ont=="CC",]
@@ -1976,7 +2040,8 @@ output$barKeggAll <- downloadHandler(
   )
   # GO gobarplot CC all #######################
   output$gobarplotAllCC <- renderPlot({
-    validate(need(go$all, "Load file to render dotPlot"))
+    validate(need(go$all, "Load file to render dotPlot"),
+             need(length(ccrowsall())>=2, "Select at least 2 row") )
     ccrowsall <- ccrowsall()
     p <- goBarplot(enrichGO = go$all, resGO = res$sh, genes= data$genesall,
               category = "CC", nrows = ccrowsall)
@@ -1993,7 +2058,7 @@ output$barKeggAll <- downloadHandler(
   output$goCircleAllCC <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"),
              need(res$sh,""),
-             need( ccrowsall() , "Select at least 4 rows"))
+             need( length(ccrowsall())>=4, "Select at least 4 rows"))
     ccrowsall <- ccrowsall()
     if(length(ccrowsall)>=4){
       circ <- data2circle(go=go$all[ccrowsall, ], res=res$sh, genes=data$genesall)
@@ -2010,7 +2075,7 @@ output$barKeggAll <- downloadHandler(
     # GO cloud CC all #######################
   output$cloudCCAll <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
-    goall <- go$all[go$all$Ont=="CC", ]
+    goall <- go$all[go$all$Ont=="CC" & go$all$level>=input$ccallLevel, ]
     myggwordcloud(goall, bg = "#343e48")
   })
   
@@ -2018,7 +2083,7 @@ output$barKeggAll <- downloadHandler(
     filename = "cloudccall.svg",
     content = function(file){
       svg(file, width = 8, height = 6)
-      myggwordcloud(go$all[go$all$Ont=="CC", ])
+      myggwordcloud(go$all[go$all$Ont=="CC" & go$all$level>=input$ccallLevel, ])
       dev.off()
     }
   )
@@ -2043,11 +2108,17 @@ output$barKeggAll <- downloadHandler(
                escape = FALSE,
                opts = list(order = list(list(6, 'asc')),
                            pageLength = 10, white_space = "normal",
+                           scrollY = "400px",
                            buttons = customButtons))
+  })
+  tableBPProxy <- dataTableProxy("tableBP")
+  observeEvent(input$resettableBP, {
+    tableBPProxy %>% selectRows(NULL)
   })
   # GO plots BP UP #####################
   output$plotBP <- renderPlotly({
-    validate(need(go$up, "Load file to render plot"))
+    validate(need(go$up, "Load file to render plot"),
+             need(bprowsup(), "Select at least one row to plot"))
       bprowsup <- bprowsup()
     if(is.null(bprowsup)){bprowsup <- c(1:10)}
     gosBP <- go$up[go$up$Ont=="BP",]
@@ -2087,7 +2158,8 @@ output$barKeggAll <- downloadHandler(
   
   # GO gobarplot BP Up #######################
   output$gobarplotUpBP <- renderPlot({
-    validate(need(go$up, "Load file to render dotPlot"))
+    validate(need(go$up, "Load file to render dotPlot"),
+             need( length(bprowsup())>=2, "Select at least 2 row") )
     bprowsup <- bprowsup()
     p <- goBarplot(enrichGO = go$up, resGO = res$sh, genes= data$genesUp,
               category = "BP", nrows = bprowsup)
@@ -2105,7 +2177,7 @@ output$barKeggAll <- downloadHandler(
   output$goCircleUpBP <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"),
              need(res$sh,""),
-             need( bprowsup() , "Select at least 4 rows"))
+             need( length(bprowsup())>=4 , "Select at least 4 rows"))
     bprowsup <- bprowsup()
     if(length(bprowsup)>=4){
       circ <- data2circle(go=go$up[bprowsup, ], res=res$sh, genes=data$genesUp)
@@ -2123,7 +2195,7 @@ output$barKeggAll <- downloadHandler(
     # GO cloud BP UP  #######################
   output$cloudBPUp <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
-    goup <- go$up[go$up$Ont=="BP", ]
+    goup <- go$up[go$up$Ont=="BP" & go$up$level>=input$bpupLevel, ]
     myggwordcloud(goup, bg = "#343e48")
   })
   
@@ -2131,7 +2203,7 @@ output$barKeggAll <- downloadHandler(
     filename = "cloudbpup.svg",
     content = function(file){
       svg(file, width = 8, height = 6)
-      myggwordcloud(go$up[go$up$Ont=="BP", ])
+      myggwordcloud(go$up[go$up$Ont=="BP" & go$up$level>=input$bpupLevel, ])
       dev.off()
     }
   )
@@ -2158,12 +2230,18 @@ output$barKeggAll <- downloadHandler(
                opts = list(order = list(list(6, 'asc')),
                            pageLength = 10, white_space = "normal",
                            buttons = customButtons,
+                           scrollY = "400px",
                            ajax = list(serverSide = TRUE, processing = TRUE))
     )
   })
+  tableMFProxy <- dataTableProxy("tableMF")
+  observeEvent(input$resettableMF, {
+    tableMFProxy %>% selectRows(NULL)
+  })
   # GO plots MF UP #####################
   output$plotMF <- renderPlotly({
-    validate(need(go$up, "Load file to render plot"))
+    validate(need(go$up, "Load file to render plot"),
+             need(mfrowsup(), "Select at least one row to plot"))
     mfrowsup <- mfrowsup()
     if(is.null(mfrowsup)){mfrowsup <- c(1:10)}
     gosMF <- go$up[go$up$Ont=="MF",]
@@ -2204,7 +2282,8 @@ output$barKeggAll <- downloadHandler(
   
   # GO gobarplot MF Up #######################
   output$gobarplotUpMF <- renderPlot({
-    validate(need(go$up, "Load file to render dotPlot"))
+    validate(need(go$up, "Load file to render dotPlot"),
+             need(length(mfrowsup())>=2, "Select at least 2 row") )
       mfrowsup <- mfrowsup()
     p <- goBarplot(enrichGO = go$up, resGO = res$sh, genes= data$genesUp,
               category = "MF", nrows = mfrowsup)
@@ -2222,7 +2301,7 @@ output$barKeggAll <- downloadHandler(
   output$goCircleUpMF <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"),
              need(res$sh,""),
-             need( mfrowsup() , "Select at least 4 rows"))
+             need( length(mfrowsup())>=4 , "Select at least 4 rows"))
     mfrowsup <- mfrowsup()
     if(length(mfrowsup)>=4){
       circ <- data2circle(go=go$up[mfrowsup, ], res=res$sh, genes=data$genesUp)
@@ -2240,7 +2319,7 @@ output$barKeggAll <- downloadHandler(
   # GO cloud MF UP  #######################
   output$cloudMFUp <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
-    goup <- go$up[go$up$Ont=="MF", ]
+    goup <- go$up[go$up$Ont=="MF" & go$up$level>=input$mfupLevel, ]
     myggwordcloud(goup, bg = "#343e48")
   })
   
@@ -2248,7 +2327,7 @@ output$barKeggAll <- downloadHandler(
     filename = "cloudmfup.svg",
     content = function(file){
       svg(file, width = 8, height = 6)
-      myggwordcloud(go$up[go$up$Ont=="MF", ])
+      myggwordcloud(go$up[go$up$Ont=="MF" & go$up$level>=input$mfupLevel, ])
       dev.off()
     }
   )
@@ -2274,12 +2353,18 @@ output$barKeggAll <- downloadHandler(
                opts = list(order = list(list(6, 'asc')),
                            pageLength = 10, white_space = "normal",
                            buttons = customButtons,
+                           scrollY = "400px",
                            ajax = list(serverSide = TRUE, processing = TRUE))
     )
   })
+  tableCCProxy <- dataTableProxy("tableCC")
+  observeEvent(input$resettableCC, {
+    tableCCProxy %>% selectRows(NULL)
+  })
   # GO plots CC UP #####################
   output$plotCC <- renderPlotly({
-    validate(need(go$up, "Load file to render plot"))
+    validate(need(go$up, "Load file to render plot"),
+             need(ccrowsup(), "Select at least one row to plot"))
     ccrowsup <- ccrowsup()
     if(is.null(ccrowsup)){ccrowsup <- c(1:10)}
     gosCC <- go$up[go$up$Ont=="CC",]
@@ -2320,7 +2405,8 @@ output$barKeggAll <- downloadHandler(
   
   # GO gobarplot CC Up #######################
   output$gobarplotUpCC <- renderPlot({
-    validate(need(go$up, "Load file to render dotPlot"))
+    validate(need(go$up, "Load file to render dotPlot"),
+             need(length(ccrowsup())>=2, "Select at least 2 row"))
     ccrowsup <- ccrowsup()
     goBarplot(enrichGO = go$up, resGO = res$sh, genes= data$genesUp,
               category = "CC", nrows = ccrowsup)
@@ -2337,7 +2423,7 @@ output$barKeggAll <- downloadHandler(
   output$goCircleUpCC <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"),
              need(res$sh,""),
-             need( ccrowsup() , "Select at least 4 rows"))
+             need( length(ccrowsup())>=4 , "Select at least 4 rows"))
     ccrowsup <- ccrowsup()
     if(length(ccrowsup)>=4){
       circ <- data2circle(go=go$up[ccrowsup, ], res=res$sh, genes=data$genesUp)
@@ -2361,7 +2447,7 @@ output$barKeggAll <- downloadHandler(
     # GO cloud CC UP  #######################
   output$cloudCCUp <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
-    goup <- go$up[go$up$Ont=="CC", ]
+    goup <- go$up[go$up$Ont=="CC" & go$up$level>=input$ccupLevel, ]
     myggwordcloud(goup, bg = "#343e48")
   })
   
@@ -2369,7 +2455,7 @@ output$barKeggAll <- downloadHandler(
     filename = "cloudccup.svg",
     content = function(file){
       svg(file, width = 8, height = 6)
-      myggwordcloud(go$up[go$up$Ont=="CC", ])
+      myggwordcloud(go$up[go$up$Ont=="CC" & go$up$level>=input$ccupLevel, ])
       dev.off()
     }
   )
@@ -2394,12 +2480,18 @@ output$barKeggAll <- downloadHandler(
                escape = FALSE,
                opts = list(order = list(list(6, 'asc')),
                            buttons = customButtons,
+                           scrollY = "400px",
                            pageLength = 10, white_space = "normal")
     )
   })
+  tableBPdownProxy <- dataTableProxy("tableBPdown")
+  observeEvent(input$resettableBPdown, {
+    tableBPdownProxy %>% selectRows(NULL)
+  })
   # GO plots BP DOWN #####################
   output$plotBPdown <- renderPlotly({
-    validate(need(go$down, "Load file to render plot"))
+    validate(need(go$down, "Load file to render plot"),
+             need(bprowsdown(), "Select at least one row to plot"))
     bprowsdown <- bprowsdown()
     if(is.null(bprowsdown)){bprowsdown <- c(1:10)}
     gosBP <- go$down[go$down$Ont=="BP",]
@@ -2440,7 +2532,8 @@ output$barKeggAll <- downloadHandler(
   )
   # GO gobarplot BP down #######################
   output$gobarplotDownBP <- renderPlot({
-    validate(need(go$down, "Load file to render dotPlot"))
+    validate(need(go$down, "Load file to render dotPlot"),
+             need(length(bprowsdown())>=2, "Select at least 2 row"))
     bprowsdown <- bprowsdown()
     p <- goBarplot(enrichGO = go$down, resGO = res$sh, genes= data$genesDown,
               category = "BP", nrows = bprowsdown)
@@ -2457,7 +2550,7 @@ output$barKeggAll <- downloadHandler(
   output$goCircleDownBP <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"),
              need(res$sh,""),
-             need( bprowsdown() , "Select at least 4 rows"))
+             need( length(bprowsdown())>=4 , "Select at least 4 rows"))
     bprowsdown <- bprowsdown()
     if(length(bprowsdown)>=4){
       circ <- data2circle(go=go$down[bprowsdown, ], res=res$sh, genes=data$genesDown)
@@ -2474,7 +2567,7 @@ output$barKeggAll <- downloadHandler(
   # GO cloud BP Down #######################
   output$cloudBPDown <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
-    godown <- go$down[go$down$Ont=="BP", ]
+    godown <- go$down[go$down$Ont=="BP" & go$down$level>=input$bpdownLevel, ]
     myggwordcloud(godown, bg = "#343e48")
   })
   
@@ -2482,7 +2575,7 @@ output$barKeggAll <- downloadHandler(
     filename = "cloudbpdown.svg",
     content = function(file){
       svg(file, width = 8, height = 6)
-      myggwordcloud(go$down[go$down$Ont=="BP", ])
+      myggwordcloud(go$down[go$down$Ont=="BP" & go$down$level>=input$bpdownLevel, ])
       dev.off()
     }
   )
@@ -2508,12 +2601,18 @@ output$barKeggAll <- downloadHandler(
                opts = list(order = list(list(6, 'asc')),
                            pageLength = 10, white_space = "normal",
                            buttons = customButtons,
+                           scrollY = "400px",
                            ajax = list(serverSide = TRUE, processing = TRUE))
     )
   })
+  tableMFdownProxy <- dataTableProxy("tableMFdown")
+  observeEvent(input$resettableMFdown, {
+    tableMFdownProxy %>% selectRows(NULL)
+  })
   # GO plots MF DOWN #####################
   output$plotMFdown <- renderPlotly({
-    validate(need(go$down, "Load file to render plot"))
+    validate(need(go$down, "Load file to render plot"),
+             need(mfrowsdown(), "Select at least one row to plot"))
     mfrowsdown <- mfrowsdown()
     if(is.null(mfrowsdown)){mfrowsdown <- c(1:10)}
     gosMF <- go$down[go$down$Ont=="MF",]
@@ -2553,7 +2652,8 @@ output$barKeggAll <- downloadHandler(
   )
   # GO gobarplot MF down #######################
   output$gobarplotDownMF <- renderPlot({
-    validate(need(go$down, "Load file to render dotPlot"))
+    validate(need(go$down, "Load file to render dotPlot"),
+             need(length(mfrowsdown())>=2, "Select at least 2 row"))
     mfrowsdown <- mfrowsdown()
     p <- goBarplot(enrichGO = go$down, resGO = res$sh, genes= data$genesDown,
               category = "MF", nrows = mfrowsdown)
@@ -2570,7 +2670,7 @@ output$barKeggAll <- downloadHandler(
   output$goCircleDownMF <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"),
              need(res$sh,""),
-             need( mfrowsdown() , "Select at least 4 rows"))
+             need( length(mfrowsdown())>=4 , "Select at least 4 rows"))
     mfrowsdown <- mfrowsdown()
     if(length(mfrowsdown)>=4){
       circ <- data2circle(go=go$down[mfrowsdown, ], res=res$sh, genes=data$genesDown)
@@ -2587,7 +2687,7 @@ output$barKeggAll <- downloadHandler(
     # GO cloud MF Down #######################
   output$cloudMFDown <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
-    godown <- go$down[go$down$Ont=="MF", ]
+    godown <- go$down[go$down$Ont=="MF" & go$down$level>=input$mfdownLevel, ]
     myggwordcloud(godown, bg = "#343e48")
   })
   
@@ -2595,7 +2695,7 @@ output$barKeggAll <- downloadHandler(
     filename = "cloudmfdown.svg",
     content = function(file){
       svg(file, width = 8, height = 6)
-      myggwordcloud(go$down[go$down$Ont=="MF", ])
+      myggwordcloud(go$down[go$down$Ont=="MF" & go$down$level>=input$mfdownLevel, ])
       dev.off()
     }
   )
@@ -2621,12 +2721,18 @@ output$barKeggAll <- downloadHandler(
                opts = list(order = list(list(6, 'asc')),
                            pageLength = 10, white_space = "normal",
                            buttons = customButtons,
+                           scrollY = "400px",
                            ajax = list(serverSide = TRUE, processing = TRUE))
     )
   })
+  tableCCdownProxy <- dataTableProxy("tableCCdown")
+  observeEvent(input$resettableCCdown, {
+    tableCCdownProxy %>% selectRows(NULL)
+  })
   # GO plots CC DOWN #####################
   output$plotCCdown <- renderPlotly({
-    validate(need(go$down, "Load file to render plot"))
+    validate(need(go$down, "Load file to render plot"),
+    need(ccrowsdown(), "Select at least one row to plot"))
     ccrowsdown <- ccrowsdown()
     if(is.null(ccrowsdown)){ccrowsdown <- c(1:10)}
     gosCC <- go$down[go$down$Ont=="CC",]
@@ -2666,7 +2772,8 @@ output$barKeggAll <- downloadHandler(
   )
   # GO gobarplot CC down #######################
   output$gobarplotDownCC <- renderPlot({
-    validate(need(go$down, "Load file to render dotPlot"))
+    validate(need(go$down, "Load file to render dotPlot"),
+             need(length(ccrowsdown())>=2, "Select at least 2 row"))
     ccrowsdown <- ccrowsdown()
     goBarplot(enrichGO = go$down, resGO = res$sh, genes= data$genesDown,
               category = "CC", nrows = ccrowsdown)
@@ -2683,7 +2790,7 @@ output$barKeggAll <- downloadHandler(
   output$goCircleDownCC <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"),
              need(res$sh,""),
-             need( ccrowsdown() , "Select at least 4 rows"))
+             need( length(ccrowsdown() )>=4 , "Select at least 4 rows"))
     ccrowsdown <- ccrowsdown()
     if(length(ccrowsdown)>=4){
       circ <- data2circle(go=go$down[ccrowsdown, ], res=res$sh, genes=data$genesDown)
@@ -2700,7 +2807,7 @@ output$barKeggAll <- downloadHandler(
     # GO cloud CC Down #######################
   output$cloudCCDown <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
-    godown <- go$down[go$down$Ont=="CC", ]
+    godown <- go$down[go$down$Ont=="CC" & go$down$level>=input$ccdownLevel, ]
     myggwordcloud(godown, bg = "#343e48")
   })
   
@@ -2708,15 +2815,27 @@ output$barKeggAll <- downloadHandler(
     filename = "cloudccdown.svg",
     content = function(file){
       svg(file, width = 8, height = 6)
-      myggwordcloud(go$down[go$down$Ont=="CC"])
+      myggwordcloud(go$down[go$down$Ont=="CC" & go$down$level>=input$ccdownLevel, ])
       dev.off()
     }
   )
-  # ............ ###############################
+  # GSEA......... ###############################
+  output$gseaSelectize <- renderUI({
+    if(specie()=="Mm"){
+      datasets <- list.files("./resources/Mm/GSEA/")
+    }else if(specie()=="Hs"){
+      datasets <- list.files("./resources/Hs/GSEA/")
+    }
+    pickerInput(inputId = "gseadb", label = "Select GSEA dataset",
+                   choices = datasets, 
+                options = list(title = "dataset"),
+                selected = NULL )
+  })
   # GSEA table ##########################
-  output$gseaTable <- renderDataTable({
+  output$gseaTable <- renderDT({
     validate(need(res$sh, "Load file to render table"))
-    gsea$gsea <- gseaKegg(res$sh, specie() )
+    validate(need(input$gseadb!="","Select dataset"))
+    gsea$gsea <- gseaKegg(res$sh, specie(), gseadb = input$gseadb )
     mygsea <- gsea$gsea
     if( length(which(mygsea@result$p.adjust<=0.05)) == 0 ){
         createAlert(session, anchorId = "gsea", title = "Oops!!", 
@@ -2744,10 +2863,16 @@ output$barKeggAll <- downloadHandler(
                      ),
                      dom = "Bfrtipl",
                      buttons = customButtons,
+                     scrollY = "400px",
                      list(pageLength = 10, white_space = "normal")
                    )
     )
     }
+  })
+  
+  gseaTableProxy <- dataTableProxy("gseaTable")
+  observeEvent(input$resetgseaTable, {
+    gseaTableProxy %>% selectRows(NULL)
   })
   # GSEA plot ##########################
   output$gseaPlot <- renderPlot({
@@ -2771,17 +2896,163 @@ output$barKeggAll <- downloadHandler(
       ggsave(file, svg$gseaplot, device = "svg", width = 10, units = "in") }
   )
   # ............ ###############################
-  # author name ######################
-  #author <- reactive({input$author})
   # generate report #############################
-  output$report <- renderUI({
-    actionButton("report2", "html report")
-  })
-  
-  observeEvent(input$report2, {
-    showModal(popupModal())
-  })
 
+  observeEvent(input$report2, {
+     showModal( modalDialog(
+       title = "Report configuration",
+       size = "l",
+       fluidRow(column(width=11,
+                       tabsetPanel(
+                         tabPanel("Preview",
+                                  checkboxGroupButtons(
+                                    size="sm",
+                                    individual = TRUE,
+                                    inputId = "modalPreview",
+                                    label = "Select preview elements to report",
+                                    choices = c("PCA", "BoxPlot", "Heatmap", "Cluster","Top6",
+                                                "Top1", "Karyoplot","Volcano","MA"),
+                                    selected = c("PCA", "BoxPlot", "Heatmap", "Cluster","Top6",
+                                                 "Top1", "Karyoplot","Volcano","MA"),
+                                    status = "primary",
+                                    checkIcon = list(
+                                      yes = icon("ok",
+                                                 lib = "glyphicon"),
+                                      no = icon("remove",
+                                                lib = "glyphicon")
+                                    )
+                                  )
+                         ),
+                         tabPanel("Kegg",
+                                  checkboxGroupButtons(
+                                    size = "sm",
+                                    individual = TRUE,
+                                    inputId = "modalkeggAll",
+                                    label = "Select elements to report Kegg All",
+                                    choices = c("Table", "Barplot", "Chorplot", "Dotplot",
+                                                "Heatmap", "Netplot"),
+                                    selected = c("Table", "Barplot", "Chorplot", "Dotplot",
+                                                 "Heatmap", "Netplot"),
+                                    status = "primary",
+                                    checkIcon = list(
+                                      yes = icon("ok",
+                                                 lib = "glyphicon"),
+                                      no = icon("remove",
+                                                lib = "glyphicon")
+                                    )
+                                  ),
+                                  checkboxGroupButtons(
+                                    size = "sm",
+                                    individual = TRUE,
+                                    inputId = "modalkeggUp",
+                                    label = "Select elements to report Kegg Up",
+                                    choices = c("Table", "Barplot", "Chorplot", "Dotplot",
+                                                "Heatmap", "Netplot"),
+                                    selected = c("Table", "Barplot", "Chorplot", "Dotplot",
+                                                 "Heatmap", "Netplot"),
+                                    status = "primary",
+                                    checkIcon = list(
+                                      yes = icon("ok",
+                                                 lib = "glyphicon"),
+                                      no = icon("remove",
+                                                lib = "glyphicon")
+                                    )
+                                  ),
+                                  checkboxGroupButtons(
+                                    size = "sm",
+                                    individual = TRUE,
+                                    inputId = "modalkeggDown",
+                                    label = "Select elements to report Kegg Down",
+                                    choices = c("Table", "Barplot", "Chorplot", "Dotplot",
+                                                "Heatmap", "Netplot"),
+                                    selected = c("Table", "Barplot", "Chorplot", "Dotplot",
+                                                 "Heatmap", "Netplot"),
+                                    status = "primary",
+                                    checkIcon = list(
+                                      yes = icon("ok",
+                                                 lib = "glyphicon"),
+                                      no = icon("remove",
+                                                lib = "glyphicon")
+                                    )
+                                  )
+                         ), # fin tabpanel KEGG
+                         tabPanel("GO",
+                                  checkboxGroupButtons(
+                                    size = "sm",
+                                    individual = TRUE,
+                                    inputId = "modalGOAll",
+                                    label = "Select elements to report GO All",
+                                    choices = c("Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
+                                    selected = c("Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
+                                    status = "primary",
+                                    checkIcon = list(
+                                      yes = icon("ok",
+                                                 lib = "glyphicon"),
+                                      no = icon("remove",
+                                                lib = "glyphicon")
+                                    )
+                                  ),
+                                  checkboxGroupButtons(
+                                    size = "sm",
+                                    individual = TRUE,
+                                    inputId = "modalGOUp",
+                                    label = "Select elements to report GO Up",
+                                    choices = c("Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
+                                    selected = c("Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
+                                    status = "primary",
+                                    checkIcon = list(
+                                      yes = icon("ok",
+                                                 lib = "glyphicon"),
+                                      no = icon("remove",
+                                                lib = "glyphicon")
+                                    )
+                                  ),
+                                  checkboxGroupButtons(
+                                    size = "sm",
+                                    individual = TRUE,
+                                    inputId = "modalGODown",
+                                    label = "Select elements to report GO Down",
+                                    choices = c("Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
+                                    selected = c("Table", "Barplot", "Dotplot", "GObarplot", "GOcircleplot"),
+                                    status = "primary",
+                                    checkIcon = list(
+                                      yes = icon("ok",
+                                                 lib = "glyphicon"),
+                                      no = icon("remove",
+                                                lib = "glyphicon")
+                                    )
+                                  )
+                         ), #fin tabpanel GO
+                         tabPanel("GSEA",
+                                  checkboxGroupButtons(
+                                    size = "sm",
+                                    individual = TRUE,
+                                    inputId = "modalGSEA",
+                                    label = "Select elements to report GSEA",
+                                    choices = c("Table", "GSEA plot"),
+                                    selected = c("Table", "GSEA plot"),
+                                    status = "primary",
+                                    checkIcon = list(
+                                      yes = icon("ok",
+                                                 lib = "glyphicon"),
+                                      no = icon("remove",
+                                                lib = "glyphicon")
+                                    )
+                                  )
+                         ) #fin de tabpanel GSEA
+                       ) # fin tabsetpanel
+       )
+       ),
+       footer = tagList(
+         actionButton("unselect","Select/Unselect all"),
+         modalButton("Cancel"),
+         actionButton("ok", "Apply"),
+         uiOutput("downloadhtml")
+       )
+     ) )
+   })
+
+  
   observeEvent(input$unselect, {
     if (input$unselect > 0) {
       if (input$unselect %% 2 == 0) {
@@ -2791,6 +3062,7 @@ output$barKeggAll <- downloadHandler(
       }
     }
   })
+  
   
   applyPress <- reactiveValues(ok = FALSE)
   observeEvent(input$ok, {
@@ -2813,8 +3085,6 @@ output$barKeggAll <- downloadHandler(
     output$download <- downloadHandler(
     filename = "report.html",
     content = function(file) {
-      removeModal()
-      applyPress$ok <- FALSE
       tempReport <- file.path(tempdir(), "report.Rmd")
       file.copy("report.Rmd", tempReport, overwrite = TRUE)
       file.copy("report.css", file.path(tempdir(), "report.css"), overwrite = TRUE)
@@ -2831,9 +3101,9 @@ output$barKeggAll <- downloadHandler(
       tablekguObj <- barkguObj <- chorkguObj <- dotkguObj <- heatkguObj <- netkguObj <- FALSE
       tablekgdObj <- barkgdObj <- chorkgdObj <- dotkgdObj <- heatkgdObj <- netkgdObj <- FALSE
       ## inicializar variables Go
-      tablegoaObj <- bargoaObj <- dotgoaObj <- gobargoaObj <- gocirclegoaObj <- FALSE
-      tablegouObj <- bargouObj <- dotgouObj <- gobargouObj <- gocirclegouObj <- FALSE
-      tablegodObj <- bargodObj <- dotgodObj <- gobargodObj <- gocirclegodObj <- FALSE
+      tablegoaObj <- bargoaObj <- dotgoaObj <- gobargoaObj <- gocirclegoaObj <- cloudgoaObj <- FALSE
+      tablegouObj <- bargouObj <- dotgouObj <- gobargouObj <- gocirclegouObj <- cloudgouObj <- FALSE
+      tablegodObj <- bargodObj <- dotgodObj <- gobargodObj <- gocirclegodObj <- cloudgodObj <- FALSE
       ## inicializar variables GSEA
       tablegseaObj <- plotgseaObj <- FALSE 
       ## Asigna variables
@@ -2914,6 +3184,7 @@ output$barKeggAll <- downloadHandler(
         if("Barplot" %in% vals$GOAll){ bargoaObj <- TRUE }
         if("Dotplot" %in% vals$GOAll){ dotgoaObj <- TRUE }
         if("GObarplot" %in% vals$GOAll){ gobargoaObj <- TRUE }
+        if("WordCloud" %in% vals$GOAll){ cloudgoaObj <- TRUE}
         if("GOcircleplot" %in% vals$GOAll){ gocirclegoaObj <- TRUE }
       }
       if(!is.null(vals$GOUp)){#para GoUp
@@ -2921,6 +3192,7 @@ output$barKeggAll <- downloadHandler(
         if("Barplot" %in% vals$GOUp){ bargouObj <- TRUE }
         if("Dotplot" %in% vals$GOUp){ dotgouObj <- TRUE }
         if("GObarplot" %in% vals$GOUp){ gobargouObj <- TRUE }
+        if("WordCloud" %in% vals$GOUp){ cloudgouObj <- TRUE}
         if("GOcircleplot" %in% vals$GOUp){ gocirclegouObj <- TRUE }
       }
       if(!is.null(vals$GODown)){#para GoDown
@@ -2928,6 +3200,7 @@ output$barKeggAll <- downloadHandler(
         if("Barplot" %in% vals$GODown){ bargodObj <- TRUE }
         if("Dotplot" %in% vals$GODown){ dotgodObj <- TRUE }
         if("GObarplot" %in% vals$GODown){ gobargodObj <- TRUE }
+        if("WordCloud" %in% vals$GODown){ cloudgodObj <- TRUE}
         if("GOcircleplot" %in% vals$GODown){ gocirclegodObj <- TRUE }
       }
       if(!is.null(vals$GSEA)){#para GSEA
@@ -2964,6 +3237,7 @@ output$barKeggAll <- downloadHandler(
                      bargouObj=bargouObj, dotgouObj=dotgouObj, gobargouObj=gobargouObj,
                      gocirclegouObj=gocirclegouObj, tablegodObj = tablegodObj, bargodObj=bargodObj,
                      dotgodObj=dotgodObj, gobargodObj=gobargodObj, gocirclegodObj=gocirclegodObj,
+                     cloudgoaObj=cloudgoaObj, cloudgouObj=cloudgouObj, cloudgodObj=cloudgodObj,
                      goall = goall, godtall=godtall, goup = goup, godtup=godtup,
                      godown = godown, godtdown=godtdown,
                      bprowsall=bprowsall, mfrowsall=mfrowsall, ccrowsall=ccrowsall,
@@ -2973,6 +3247,8 @@ output$barKeggAll <- downloadHandler(
                      plotgseaObj = plotgseaObj, textnotes = textnotes)
       
       params <- c(params, list(tempdir=tempdir() ))
+      removeModal()
+      applyPress$ok <- FALSE
       rmarkdown::render(
         tempReport,
         output_file = file,

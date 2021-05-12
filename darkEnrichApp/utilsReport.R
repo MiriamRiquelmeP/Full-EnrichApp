@@ -2814,7 +2814,7 @@ myggwordcloudReport <- function(data){
   bigram_filter <- counter %>% 
     filter(!bigram %in% stop_words$word) %>% 
     filter(!bigram %in% letras)
-  bigram_filter <- bigram_filter[ - which(!is.na(extract_numeric(bigram_filter$bigram))  ) ,]
+  bigram_filter <- bigram_filter[ - which(!is.na(readr::parse_number(bigram_filter$bigram))  ) ,]
   wordcloud::wordcloud(bigram_filter$bigram, bigram_filter$n, random.order = F, random.color = T,
                        min.freq = 2, max.words = 200, scale = c(6,1),
                        colors = distinctColorPalette(length(unique(bigram_filter$n))) )

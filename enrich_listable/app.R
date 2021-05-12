@@ -36,8 +36,8 @@ library(visNetwork)
 library(ggrepel)
 library(circlize)
 library(mychordplot)
-library(ggwordcloud)
-library(wordcloud2)
+#library(ggwordcloud)
+#library(wordcloud2)
 library(randomcoloR)
 library(tidytext)
 source("global.R")
@@ -216,40 +216,40 @@ ui <- dashboardPage(title="Rnaseq viewer and report",
                     sidebar,
                     body
 ) # fin del UI
-ui <- secure_app(ui, enable_admin = TRUE, theme = shinythemes::shinytheme("darkly"),
-                 head_auth = HTML("<style>
-                 .panel-auth{
-                                  background-color: #343e48 !important;
-                                  }
-                                  </style>"
-                                  ),
-
-                 tags_bottom = tagList(tags$div(style = "text-align: center;",
-                   tags$image(
-                     height = 40,
-                     src = "mircen.png",
-                     style = "padding-right: 10px; padding-top: 10px;"
-                   ),
-                   tags$image(
-                     height = 50,
-                     src = "imib.png"#,
-                   ))
-                  )
-)
+# ui <- secure_app(ui, enable_admin = TRUE, theme = shinythemes::shinytheme("darkly"),
+#                  head_auth = HTML("<style>
+#                  .panel-auth{
+#                                   background-color: #343e48 !important;
+#                                   }
+#                                   </style>"
+#                                   ),
+# 
+#                  tags_bottom = tagList(tags$div(style = "text-align: center;",
+#                    tags$image(
+#                      height = 40,
+#                      src = "mircen.png",
+#                      style = "padding-right: 10px; padding-top: 10px;"
+#                    ),
+#                    tags$image(
+#                      height = 50,
+#                      src = "imib.png"#,
+#                    ))
+#                   )
+# )
 
 ########################################## SERVER #################################################
 server <- function(input, output, session) {
   
-      res_auth <- secure_server(
-     check_credentials = check_credentials(
-         "pathToUserDataBase",
-         passphrase = readRDS("pathToDataBasePass")
-     )
-   )
+   #    res_auth <- secure_server(
+   #   check_credentials = check_credentials(
+   #       "/datos/repos/darkEnrichApp/users.sqlite",
+   #       passphrase = readRDS("/datos/repos/enrichapp_listable/dbpass.Rds")
+   #   )
+   # )
   #res_auth <- secure_server(
   #   check_credentials = check_credentials(
-  #       "pathToUserDataBase",
-  #       passphrase = readRDS("pathToDataBasePass")
+  #       "/datos/repos/darkEnrichApp/users.sqlite",
+  #       passphrase = readRDS("/datos/repos/enrichapp_listable/dbpass.Rds")
   #   )
   # )
     

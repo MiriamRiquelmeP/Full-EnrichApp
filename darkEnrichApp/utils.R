@@ -3,7 +3,7 @@ legendChorplot <- function(enrichdf){
     labels <- enrichdf$Pathway
     colours = colorRampPalette(RColorBrewer::brewer.pal(11, "Spectral"))(length(labels))
     par(bg="#37414b", mar=c(0.5,0.5,0.5,0.5))
-    plot(NULL, xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
+    plot(NULL, xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1, bg="#37414b")
     legend("topleft", legend = labels, pch=16, pt.cex = 1.8,
            cex = 1, bty="n", col = colours, bg="#37414b",
            text.col="white", border = "#37414b")
@@ -772,8 +772,8 @@ getGOlevel <- function(specie){
             id = c("GO:0008150","GO:0003674","GO:0005575"),
             level= 0))
     GOlevel <- aggregate(level~id, GOlevel, function(x)x[which.min(abs(x))])
-    filePath <- paste0("./resources/",specie,"/GO/GOlevel.Rds")
-    saveRDS(GOlevel, filePath = paste0("./resources/",specie,"/GO/GOlevels.Rds"))
+    filePath <- paste0("./resources/",specie,"/GO/GOlevels.Rds")
+    saveRDS(GOlevel, filePath)
 }
 
 # funcion que preparar los datos de enrich kegg para pasárlos a datatable2 ###############
@@ -843,7 +843,7 @@ plotGO <- function(enrichdf, nrows = 30, orderby="p-val", ont, colors=NULL){
     #            title=dataTitle[[ont]][1], xaxis = list(tickvals = c(1:max(enrichdf$DEG) ) ))
     p <- enrichdf[1:nrows,] %>% 
       ggplot( aes( y = DEG, x = go_id, 
-                   text = paste0("p-val: ",format(`p-val`, scientific = T, digits = 4)) )) +
+                   text = paste0("p-val: ",format(`p-val`, scientific = T, digits = 4),"<br />Term: ",Term) )) +
               geom_bar(position = "stack", stat = "identity", fill = colors) + coord_flip() +
         theme(axis.text.y = element_text(angle = 0, hjust = 1)) + theme_bw() +
         scale_fill_manual(values = "red") +
@@ -880,9 +880,10 @@ plotGOAll <- function(enrichdf, nrows = 30, orderby="p-val",
         mutate(numUp = length(which(strsplit(genes,", ")[[1]] %in% genesUp$ENTREZID ))) %>% 
         mutate(numDown = length(which(strsplit(genes,", ")[[1]] %in% genesDown$ENTREZID ))) %>% 
         mutate(numDownNeg = -length(which(strsplit(genes,", ")[[1]] %in% genesDown$ENTREZID )))
-    enrichAll <- enrichAll %>% dplyr::select(go_id, numUp, numDown, numDownNeg, `p-val`)
+    enrichAll <- enrichAll %>% dplyr::select(Term, go_id, numUp, numDown, numDownNeg, `p-val`)
     df <- data.frame(
         Regulation = rep(c("Up", "Down"), each = nrows),
+        term = enrichAll$Term,
         goId = enrichAll$go_id,
         x = rep(1:nrows, 2),
         DEG = c(enrichAll$numUp, enrichAll$numDown),
@@ -891,7 +892,7 @@ plotGOAll <- function(enrichdf, nrows = 30, orderby="p-val",
     )
     colorfill <- c(dataTitle[[ont]][2:3])
     r <- ggplot(df, aes(x = goId, y = DENeg, fill = Regulation,
-                        text =paste0("p-val: ",format(p_val, scientific = T, digits = 4)) )) +
+                        text =paste0("p-val: ",format(p_val, scientific = T, digits = 4),"<br />Path: ",term)  )) +
         geom_bar(stat = "identity", position = "identity") + coord_flip() +
         theme(axis.text.y = element_text(angle = 0, hjust = 1)) + theme_bw() +
         scale_fill_manual(values = colorfill) +
@@ -899,7 +900,7 @@ plotGOAll <- function(enrichdf, nrows = 30, orderby="p-val",
               axis.title.y = element_blank())
     #r <- r %>% plotly::ggplotly(tooltip = "all")
     p <- ggplot(df, aes(fill = Regulation, y = DEG, x = goId,
-                        text =paste0("p-val: ",format(p_val, scientific = T, digits = 4)) )) +
+                        text =paste0("p-val: ",format(p_val, scientific = T, digits = 4),"<br />Path: ",term) )) +
         geom_bar(position = "dodge", stat = "identity") + coord_flip() +
         theme(axis.text.y = element_text(angle = 0, hjust = 1)) + theme_bw() +
         scale_fill_manual(values = colorfill) +
@@ -907,7 +908,7 @@ plotGOAll <- function(enrichdf, nrows = 30, orderby="p-val",
               axis.title.y = element_blank())
     #p <- p %>% ggplotly(tooltip = "all")
     q <- ggplot(df, aes(fill = Regulation, y = DEG, x = goId,
-                        text =paste0("p-val: ",format(p_val, scientific = T, digits = 4)) )) +
+                        text =paste0("p-val: ",format(p_val, scientific = T, digits = 4),"<br />Path: ",term) )) +
         geom_bar(position = "stack", stat = "identity") + coord_flip() +
         theme(axis.text.y = element_text(angle = 0, hjust = 1)) + theme_bw() +
         scale_fill_manual(values = colorfill) +
@@ -973,11 +974,12 @@ plotKeggAll <- function(enrichdf, nrows = 10, orderby = "p-val",
         mutate(numUp = length(which(strsplit(genes,",")[[1]] %in% genesUp$ENTREZID ))) %>% 
         mutate(numDown = length(which(strsplit(genes,",")[[1]] %in% genesDown$ENTREZID ))) %>% 
         mutate(numDownNeg = -length(which(strsplit(genes,",")[[1]] %in% genesDown$ENTREZID )))
-    enrichAll <- enrichAll %>% dplyr::select(pathID, numUp, numDown, numDownNeg, `p-val`)
+    enrichAll <- enrichAll %>% dplyr::select(Pathway, pathID, numUp, numDown, numDownNeg, `p-val`)
     enrichAll$pathID <- sub(  "path:", "", enrichAll$pathID )
     df <- data.frame(
         Regulation = rep(c("Up", "Down"), each = nrows),
         pathId = enrichAll$pathID,
+        path = enrichAll$Pathway,
         x = rep(1:nrows, 2),
         DEG = c(enrichAll$numUp, enrichAll$numDown),
         DENeg = c(enrichAll$numUp, enrichAll$numDownNeg),
@@ -985,7 +987,7 @@ plotKeggAll <- function(enrichdf, nrows = 10, orderby = "p-val",
     )
     colorfill <- colors #c("#eb3f3f","#3e90bd")
     r <- ggplot(df, aes(x = pathId, y = DENeg, fill = Regulation,
-                        text =paste0("p-val: ",format(p_val, scientific = T, digits = 4)) )) +
+                        text =paste0("p-val: ",format(p_val, scientific = T, digits = 4),"<br />Path: ",path ) )) +
         geom_bar(stat = "identity", position = "identity") + coord_flip() +
         theme(axis.text.y = element_text(angle = 0, hjust = 1)) + theme_bw() +
         scale_fill_manual(values = colorfill) +
@@ -993,7 +995,7 @@ plotKeggAll <- function(enrichdf, nrows = 10, orderby = "p-val",
               axis.title.y = element_blank())
     #r <- r %>% plotly::ggplotly(tooltip = "all" )
     p <- ggplot(df, aes(fill = Regulation, y = DEG, x = pathId,
-                        text =paste0("p-val: ",format(p_val, scientific = T, digits = 4)) )) +
+                        text =paste0("p-val: ",format(p_val, scientific = T, digits = 4),"<br />Path: ",path ) )) +
         geom_bar(position = "dodge", stat = "identity") + coord_flip() +
         theme(axis.text.y = element_text(angle = 0, hjust = 1)) + theme_bw() +
         scale_fill_manual(values = colorfill) +
@@ -1001,7 +1003,7 @@ plotKeggAll <- function(enrichdf, nrows = 10, orderby = "p-val",
               axis.title.y = element_blank())
     #p <- p %>% ggplotly(tooltip = "all")
     q <- ggplot(df, aes(fill = Regulation, y = DEG, x = pathId, 
-                        text =paste0("p-val: ",format(p_val, scientific = T, digits = 4)) )) +
+                        text =paste0("p-val: ",format(p_val, scientific = T, digits = 4),"<br />Path: ",path ) )) +
         geom_bar(position = "stack", stat = "identity") + coord_flip() +
         theme(axis.text.y = element_text(angle = 0, hjust = 1)) + theme_bw() +
         scale_fill_manual(values = colorfill) +
@@ -1021,7 +1023,7 @@ loadGenes <- function(filegenes){
 # PCA de un objeto DESeq #####################
 
     plotPCA = function(object, intgroup = "condition", ntop = 500,
-                   returnData = TRUE, labels = NULL, customColor = NULL){
+                   returnData = TRUE, labels = NULL, customColor = NULL, axes=c(1,2)){
   # calculate the variance for each gene
   rv <- rowVars(assay(object))
   # select the ntop genes by variance
@@ -1046,24 +1048,26 @@ loadGenes <- function(filegenes){
     shapegroup <- factor(intgroup.df[ ,intgroup[2] ] )
     d <-
       data.frame(
-        PC1 = pca$x[, 1],
-        PC2 = pca$x[, 2],
+        PC1 = pca$x[, axes[1]],
+        PC2 = pca$x[, axes[2]],
         group = colgroup,
         shape = shapegroup,
         intgroup.df,
-        name = colnames(object),
-        labels = colData(object)[[labels]]
+        #name = colnames(object),
+        name = as.character(colData(object)[[labels]]),
+        labels = as.character(colData(object)[[labels]])
       )
   } else{
     colgroup <- factor(intgroup.df[ ,intgroup[1] ] )
     d <-
       data.frame(
-        PC1 = pca$x[, 1],
-        PC2 = pca$x[, 2],
+        PC1 = pca$x[, axes[1]],
+        PC2 = pca$x[, axes[2]],
         group = colgroup,
         intgroup.df,
-        name = colnames(object),
-        labels = colData(object)[[labels]]
+        #name = colnames(object),
+        name = as.character(colData(object)[[labels]]),
+        labels = as.character(colData(object)[[labels]])
       )
   }
   d$group <- as.factor(d$group)
@@ -1075,16 +1079,16 @@ loadGenes <- function(filegenes){
         colours <- customColor
     }
   if (returnData) {
-    attr(d, "percentVar") <- percentVar[1:2]
+    attr(d, "percentVar") <- percentVar[c(axes[1],axes[2])]
     #return(d)
   }
  if(length(intgroup)>1){
     p <- ggplot(data = d,
-                aes_string(x = "PC1", y = "PC2", color = "group", shape = "shape")) +
+                aes_string(x = "PC1", y = "PC2", color = "group", shape = "shape", text="labels")) +
       geom_point(size = 3) +
       ggtitle("PCA for top 500 genes on normalized data") +
-      xlab(paste0("PC1: ", round(percentVar[1] * 100), "% variance")) +
-      ylab(paste0("PC2: ", round(percentVar[2] * 100), "% variance")) +
+      xlab(paste0("PC",axes[1],": ", round(percentVar[axes[1]] * 100), "% variance")) +
+      ylab(paste0("PC",axes[1],": ", round(percentVar[axes[2]] * 100), "% variance")) +
       scale_color_manual(values = colours, name = intgroup[1]) +
       scale_shape_manual(values = seq_len(length(d$shape)), name=intgroup[2] )+
       #coord_fixed() +
@@ -1096,11 +1100,11 @@ loadGenes <- function(filegenes){
     }
   else{
     p <- ggplot(data = d,
-                aes_string(x = "PC1", y = "PC2", color = "group")) +
+                aes_string(x = "PC1", y = "PC2", color = "group", text = "labels")) +
       geom_point(size = 3) +
       ggtitle("PCA for top 500 genes on normalized data") +
-      xlab(paste0("PC1: ", round(percentVar[1] * 100), "% variance")) +
-      ylab(paste0("PC2: ", round(percentVar[2] * 100), "% variance")) +
+      xlab(paste0("PC",axes[1],": ", round(percentVar[axes[1]] * 100), "% variance")) +
+      ylab(paste0("PC",axes[1],": ", round(percentVar[axes[2]] * 100), "% variance")) +
       scale_color_manual(values = colours, name = intgroup[1]) +
       #coord_fixed() +
       ggrepel::geom_text_repel(aes(label = labels,# paste("",d$name, sep = ""),
@@ -1112,39 +1116,39 @@ loadGenes <- function(filegenes){
     return(p)
 }
 
-pca3dplot <- function(object, intgroup = "condition", ntop = 500,
-                   returnData = TRUE){
-    rv <- rowVars(assay(object))
-   select <- order(rv, decreasing = TRUE)[seq_len(min(ntop, length(rv)))]
-  pca <- prcomp(t(assay(object)[select, ]))
-  percentVar <- pca$sdev ^ 2 / sum(pca$sdev ^ 2)
-  if (!all(intgroup %in% names(colData(object)))) {
-    stop("the argument 'intgroup' should specify columns of colData(dds)")
-  }
-  intgroup.df <- as.data.frame(colData(object)[, intgroup, drop = FALSE])
-  
-    colgroup <- factor(intgroup.df[ ,intgroup[1] ] )
-    d <-data.frame(
-        PC1 = pca$x[, 1],
-        PC2 = pca$x[, 2],
-        PC3 = pca$x[, 3],
-        group = colgroup,
-        intgroup.df,
-        name = colnames(object),
-        labels = colData(object)[[intgroup[1]]]
-      )
-
-  # assembly the data for the plot
-  
-  getPalette <- colorRampPalette(c("#f7837b","#1cc3c8"))
-  colours <- getPalette(length(levels(d$group)))
-  if (returnData) {
-    attr(d, "percentVar") <- percentVar[1:2]
-    #return(d)
-  }
-    return(d)
-  }
-
+# pca3dplot <- function(object, intgroup = "condition", ntop = 500,
+#                    returnData = TRUE){
+#     rv <- rowVars(assay(object))
+#    select <- order(rv, decreasing = TRUE)[seq_len(min(ntop, length(rv)))]
+#   pca <- prcomp(t(assay(object)[select, ]))
+#   percentVar <- pca$sdev ^ 2 / sum(pca$sdev ^ 2)
+#   if (!all(intgroup %in% names(colData(object)))) {
+#     stop("the argument 'intgroup' should specify columns of colData(dds)")
+#   }
+#   intgroup.df <- as.data.frame(colData(object)[, intgroup, drop = FALSE])
+#   
+#     colgroup <- factor(intgroup.df[ ,intgroup[1] ] )
+#     d <-data.frame(
+#         PC1 = pca$x[, 1],
+#         PC2 = pca$x[, 2],
+#         PC3 = pca$x[, 3],
+#         group = colgroup,
+#         intgroup.df,
+#         name = colnames(object),
+#         labels = colData(object)[[intgroup[1]]]
+#       )
+# 
+#   # assembly the data for the plot
+#   
+#   getPalette <- colorRampPalette(c("#f7837b","#1cc3c8"))
+#   colours <- getPalette(length(levels(d$group)))
+#   if (returnData) {
+#     attr(d, "percentVar") <- percentVar[1:2]
+#     #return(d)
+#   }
+#     return(d)
+#   }
+# 
 
 # Función para recuperar los genes up de un objeto DEseq #############
 # actualmente para p-val <= 0.05 fijo.
@@ -1153,8 +1157,10 @@ getSigUpregulated <- function(dds, pval=0.05, logfc=0, specie="Mm"){
   rk <- as.data.frame(dds)
   rk <- rk[rk$log2FoldChange >logfc & rk$padj<=pval,]
   rk <- rk[ order(rk$padj, decreasing = TRUE), ]
-  annot <- geneIdConverter(rownames(rk), specie)
-  return(data.frame(SYMBOL = annot$consensus, ENTREZID = annot$ENTREZID, stringsAsFactors = F) )
+  # annot <- geneIdConverter(rownames(rk), specie)
+  annot <- data.frame(SYMBOL = rk$GeneName_Symbol, ENTREZID = rk$ENTREZ)# 07/02/2021
+  # return(data.frame(SYMBOL = annot$consensus, ENTREZID = annot$ENTREZID, stringsAsFactors = F) )
+  return(annot) #07/02/2021
 }
 
 # Función para recuperar los genes down de un objeto DEseq #############
@@ -1164,8 +1170,10 @@ getSigDownregulated <- function(dds, pval=0.05, logfc=0, specie="Mm"){
   rk <- as.data.frame(dds)
   rk <- rk[rk$log2FoldChange <logfc & rk$padj<=pval,]
   rk <- rk[ order(rk$padj, decreasing = TRUE), ]
-  annot <- geneIdConverter(rownames(rk), specie)
-  return(data.frame(SYMBOL = annot$consensus, ENTREZID = annot$ENTREZID, stringsAsFactors = F) )
+  #annot <- geneIdConverter(rownames(rk), specie)
+  annot <- data.frame(SYMBOL = rk$GeneName_Symbol, ENTREZID = rk$ENTREZ)# 07/02/2021
+  #return(data.frame(SYMBOL = annot$consensus, ENTREZID = annot$ENTREZID, stringsAsFactors = F) )
+  return(annot) #07/02/2021
 }
 
 # Convertidor de nombres de genes ###################
@@ -1187,27 +1195,99 @@ geneIdConverter <- function(genes, specie="Mm"){ # genes = vector of ensembl gen
         orgdb <- org.Hs.eg.db
     }
   annot <- NULL
-  annot$ENSEMBL <- genes
-  annot$SYMBOL <-  mapIds(ensdb, keys=genes, column="SYMBOL",keytype="GENEID")
-  annot$SYMBOL1 <- mapIds(orgdb, keys = genes, column = 'SYMBOL', keytype = 'ENSEMBL', multiVals = 'first') 
-  annot$description <- mapIds(orgdb, keys = genes, column = 'GENENAME', keytype = 'ENSEMBL', multiVals = 'first')
-  annot <- as.data.frame(annot)
-  consensus <- data.frame('Symbol'= ifelse(!is.na(annot$SYMBOL), as.vector(annot$SYMBOL),
-                                           ifelse(!is.na(annot$SYMBOL1),as.vector(annot$SYMBOL1),
-                                                  as.vector(annot$ENSEMBL))), stringsAsFactors = F)
-  annot$consensus <- consensus$Symbol
-  entrez1 <- mapIds(orgdb, keys = annot$consensus, column = "ENTREZID", keytype = "SYMBOL")
-  entrez2 <- mapIds(orgdb, keys = as.character(annot$ENSEMBL),
-                    column = "ENTREZID", keytype = "ENSEMBL")
-  entrez1 <- ifelse(entrez1=="NULL", NA, entrez1)
-  entrez2 <- ifelse(entrez2=="NULL", NA, entrez2)
-  annot$entrez1 <- as.vector(unlist(entrez1))
-  annot$entrez2 <- as.vector(unlist(entrez2))
-  ENTREZID <- ifelse(!is.na(annot$entrez1), annot$entrez1, annot$entrez2)
-  annot$ENTREZID <- ENTREZID
+    annot$genes <- genes #
+    annot$ENSEMBL <- genes
+    annot$SYMBOL <-  mapIds(ensdb, keys=genes, column="SYMBOL",keytype="GENEID")
+    annot$SYMBOL1 <- mapIds(orgdb, keys = genes, column = 'SYMBOL', keytype = 'ENSEMBL',
+                            multiVals = 'first') 
+    annot$description <- mapIds(orgdb, keys = genes, column = 'GENENAME', 
+                                keytype = 'ENSEMBL', multiVals = 'first')
+    annot <- as.data.frame(annot)
+    consensus <- data.frame('Symbol'= ifelse(!is.na(annot$SYMBOL), 
+                                             as.vector(annot$SYMBOL),
+                                             ifelse(!is.na(annot$SYMBOL1),as.vector(annot$SYMBOL1),
+                                                    as.vector(annot$ENSEMBL))), stringsAsFactors = F)
+    annot$consensus <- consensus$Symbol
+    entrez1 <- mapIds(orgdb, keys = annot$consensus, column = "ENTREZID", keytype = "SYMBOL")
+    entrez2 <- mapIds(orgdb, keys = as.character(annot$ENSEMBL),
+                      column = "ENTREZID", keytype = "ENSEMBL")
+    entrez1 <- ifelse(entrez1=="NULL", NA, entrez1)
+    entrez2 <- ifelse(entrez2=="NULL", NA, entrez2)
+    annot$entrez1 <- as.vector(unlist(entrez1))
+    annot$entrez2 <- as.vector(unlist(entrez2))
+    ENTREZID <- ifelse(!is.na(annot$entrez1), annot$entrez1, annot$entrez2)
+    annot$ENTREZID <- ENTREZID
+
+
   return(annot)
 }
 
+geneIdConverter2 <- function(genes, specie="Mm"){
+  require("EnsDb.Mmusculus.v79")
+  require("org.Mm.eg.db")
+  require("EnsDb.Hsapiens.v86")
+  require("org.Hs.eg.db")
+  
+  if(specie=="Mm"){
+    ensdb <- EnsDb.Mmusculus.v79
+    orgdb <- org.Mm.eg.db
+  }else{
+    ensdb <- EnsDb.Hsapiens.v86
+    orgdb <- org.Hs.eg.db
+  }
+  annot <- NULL
+  annot$genes <- as.character(genes) #
+  annot <- data.frame(annot, stringsAsFactors = F)
+  ensrows <- grep("^(ENS|ens)", genes, perl=TRUE) # filas ensembl
+  noensrow <- grep("^(?!ENS|ens)", genes, perl=TRUE) # filas no ensembl
+  annot$ENSEMBL <- NA
+  annot$SYMBOL <- NA
+  annot$ENTREZID <- NA
+  annot$description <- NA
+  
+  if(length(ensrows) != 0){
+    annot$ENSEMBL[ensrows] <- as.character(annot$genes[ensrows])
+    annot$SYMBOL[ensrows] <- mapIds(ensdb, keys = annot$gene[ensrows], column = "SYMBOL", keytype = "GENEID" )
+    annot$SYMBOL[ensrows] <- mapIds(orgdb, keys = annot$genes[ensrows], column = "SYMBOL", keytype = "ENSEMBL" )
+  }
+  
+  if(length(noensrow)!=0){
+    annot$ENSEMBL[noensrow] <- mapIds(ensdb, keys = annot$gene[noensrow], column = "GENEID", keytype = "SYMBOL" )
+    result_trycatch <- tryCatch( 
+      { mapIds(orgdb, keys = annot$genes[noensrow], column = "ENSEMBL", keytype = "SYMBOL" ) } ,
+      error = function(e){return(NA)}
+    )
+    annot$ENSEMBL[noensrow] <- result_trycatch
+    result2_trycatch <- tryCatch(
+      {mapIds(orgdb, keys = annot$genes[which(grepl("^(?!ENS|ens)", genes, perl=TRUE) & is.na(annot$SYMBOL)) ],
+              column = "SYMBOL", keytype = "ALIAS" )},
+      error = function(e){return(NA)}
+    )
+    annot$SYMBOL[which(grepl("^(?!ENS|ens)", genes, perl=TRUE) & is.na(annot$SYMBOL)) ] <- result2_trycatch
+  }
+  annot <- annot %>%  mutate(SYMBOL =  map_chr(SYMBOL, paste0, collapse = "") )
+  annot <- annot %>%  mutate(ENSEMBL =  map_chr(ENSEMBL, paste0, collapse = "") )
+  annot$ENTREZID[!is.na(annot$ENSEMBL)] <- mapIds(ensdb, keys = annot$ENSEMBL[!is.na(annot$ENSEMBL)] , column = "ENTREZID", keytype = "GENEID" )
+  annot$ENTREZID[!is.na(annot$SYMBOL)] <- mapIds(ensdb, keys = annot$SYMBOL[!is.na(annot$SYMBOL)], column = "ENTREZID", keytype = "SYMBOL" )
+  annot$ENTREZID[!is.na(annot$ENSEMBL)] <- mapIds(orgdb, keys = annot$ENSEMBL[!is.na(annot$ENSEMBL)] , column = "ENTREZID", keytype = "ENSEMBL" )
+  annot$ENTREZID[!is.na(annot$SYMBOL)] <- mapIds(orgdb, keys = annot$SYMBOL[!is.na(annot$SYMBOL)], column = "ENTREZID", keytype = "SYMBOL" )
+  annot$description[!is.na(annot$ENSEMBL)] <- mapIds(orgdb,
+                                                     keys = annot$ENSEMBL[!is.na(annot$ENSEMBL)],
+                                                     column = 'GENENAME', 
+                                                     keytype = 'ENSEMBL', multiVals = 'first')
+  
+  annot$description[!is.na(annot$SYMBOL)] <- mapIds(orgdb,
+                                                    keys = annot$SYMBOL[!is.na(annot$SYMBOL)],
+                                                    column = 'GENENAME', 
+                                                    keytype = 'SYMBOL', multiVals = 'first')
+  
+  
+  annot <- annot %>%  mutate(ENTREZID = map_chr(ENTREZID, paste0, collapse = "") )
+  annot <- annot %>%  mutate(description = map_chr(description, paste0, collapse = "") )
+  annot[annot=="NA"]<-NA
+  annot <- annot %>% mutate(SYMBOL = if_else(is.na(SYMBOL), genes, SYMBOL ) ) # 04/03/2021
+  return(annot)
+}
 # Dotplot de objeto enrich kegg ##########################
 dotPlotkegg <- function(data, n = 20){
   names(data) <- gsub("P.DE", "p-val", names(data) )
@@ -1317,17 +1397,24 @@ buildKeggDataset <- function(specie="Mm"){
   }
 
 # Función para hacer GSEA pathway #################################
-gseaKegg <- function(res, specie){
-  pathwayDataSet <- readRDS(paste0("./resources/",specie,"/GSEA/keggDataGSEA.Rds"))
+gseaKegg <- function(res, specie, gseadb){
+  if(gseadb == "keggDataGSEA.Rds"){
+    pathwayDataSet <- readRDS(paste0("./resources/",specie,"/GSEA/keggDataGSEA.Rds"))
+  }else{
+    pathwayDataSet <- readRDS(paste0("./resources/",specie,"/GSEA/",gseadb))
+    pathwayDataSet <- enframe(pathwayDataSet) %>% unnest(c("name","value"))
+    names(pathwayDataSet) <- c("Id","GeneID")
+  }
   res.sh <- res
   #res.sh <- as.data.frame(lfcShrink(dds, coef=2, type="apeglm", res = results(dds)))
   res.sh <- res.sh[order(res.sh$log2FoldChange, decreasing = TRUE), ]
-  res.sh$ENSEMBL <- rownames(res.sh)
-  geneRank <- geneIdConverter( res.sh$ENSEMBL)
-  resRank <- left_join(res.sh, geneRank, by=c("ENSEMBL"="ENSEMBL"))
-  resRank <- resRank[!is.na(resRank$ENTREZID), c("ENTREZID","log2FoldChange") ]
+  #res.sh$ENSEMBL <- rownames(res.sh)
+  #geneRank <- geneIdConverter( res.sh$ENSEMBL)
+  #resRank <- left_join(res.sh, geneRank, by=c("ENSEMBL"="ENSEMBL"))
+  #resRank <- res.shRank[!is.na(resRank$ENTREZID), c("ENTREZID","log2FoldChange") ]
+  resRank <- res.sh[!is.na(res.sh$ENTREZ), c("ENTREZ","log2FoldChange") ] # 07/02/2021
   vectRank <- resRank$log2FoldChange
-  attr(vectRank, "names") <- as.character(resRank$ENTREZID)
+  attr(vectRank, "names") <- as.character(resRank$ENTREZ)
   mygsea <- clusterProfiler::GSEA(vectRank, 
                                   TERM2GENE = pathwayDataSet, 
                                   by="fgsea", pvalueCutoff = 0.1)
@@ -1990,7 +2077,7 @@ heat <- function (vsd, n = 40, intgroup = "AAV", sampleName = "condition",
 }
 ## New heatmap plotly
 heat2 <- function (vsd, n = 40, intgroup = NULL, sampleName = NULL,
-                      specie="Mm", customColor = NULL, ggplt = FALSE ) 
+                      specie="Mm", customColor = NULL, ggplt = FALSE, annot ) 
     {
       require("EnsDb.Mmusculus.v79")
       require("org.Mm.eg.db")
@@ -2009,7 +2096,7 @@ heat2 <- function (vsd, n = 40, intgroup = NULL, sampleName = NULL,
     #vsd <- vst(data)
     topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), n)
     mat  <- assay(vsd)[ topVarGenes, ]
-    mat  <- mat - rowMeans(mat)
+    #mat  <- mat - rowMeans(mat) #eliminado 18/03/2021
     if (!all(intgroup %in% names(colData(vsd)))) {
       stop("the argument 'intgroup' should specify columns of colData(dds)")
     }
@@ -2020,19 +2107,21 @@ heat2 <- function (vsd, n = 40, intgroup = NULL, sampleName = NULL,
       df <- as.data.frame(colData(vsd)[, intgroup, drop = FALSE])
     }
     
-    annot <- NULL
-    annot$ENSEMBL <- rownames(mat)
-    annot$SYMBOL <-  mapIds(ensdb, keys=rownames(mat),
-                            column="SYMBOL",keytype="GENEID")
-    annot$SYMBOL1 <- mapIds(orgdb, keys = rownames(mat),
-                            column = 'SYMBOL', keytype = 'ENSEMBL', multiVals = 'first') 
-    annot$description <- mapIds(orgdb, keys = rownames(mat),
-                                column = 'GENENAME', keytype = 'ENSEMBL', multiVals = 'first')
-    annot <- as.data.frame(annot)
-    consensus <- data.frame('Symbol'= ifelse(!is.na(annot$SYMBOL), as.vector(annot$SYMBOL),
-                                             ifelse(!is.na(annot$SYMBOL1),as.vector(annot$SYMBOL1),
-                                                    as.vector(annot$ENSEMBL))), stringsAsFactors = F)
+    # annot <- NULL
+    # annot$ENSEMBL <- rownames(mat)
+    # annot$SYMBOL <-  mapIds(ensdb, keys=rownames(mat),
+    #                         column="SYMBOL",keytype="GENEID")
+    # annot$SYMBOL1 <- mapIds(orgdb, keys = rownames(mat),
+    #                         column = 'SYMBOL', keytype = 'ENSEMBL', multiVals = 'first') 
+    # annot$description <- mapIds(orgdb, keys = rownames(mat),
+    #                             column = 'GENENAME', keytype = 'ENSEMBL', multiVals = 'first')
+    # annot <- as.data.frame(annot)
+    # consensus <- data.frame('Symbol'= ifelse(!is.na(annot$SYMBOL), as.vector(annot$SYMBOL),
+    #                                          ifelse(!is.na(annot$SYMBOL1),as.vector(annot$SYMBOL1),
+    #                                                 as.vector(annot$ENSEMBL))), stringsAsFactors = F)
     #colores definidos por el usuario para primera variable
+    consensus <- annot[annot$genes %in% rownames(mat),]
+    consensus <- consensus %>% arrange(match(genes, rownames(mat)))
     ann_colors<-list()
     ann_colors[[intgroup[1]]] <- customColor
     names(ann_colors[[intgroup[1]]]) <- c(levels(df[[intgroup[1]]]))
@@ -2050,11 +2139,12 @@ heat2 <- function (vsd, n = 40, intgroup = NULL, sampleName = NULL,
                            fsr = c(rep(10,50), rep(8,10), rep(7,10), rep(6,10), rep(1, 40) ))
     ch <- sizesDf$ch[ nrow(mat) ]
     fsr <- sizesDf$fsr[ nrow(mat) ]
-    if(nrow(mat)>80){labrow = rep(NA, nrow(mat))}else{labrow = as.character(consensus$Symbol)}
+    if(nrow(mat)>80){labrow = rep(NA, nrow(mat))}else{labrow = as.character(consensus$SYMBOL)} #consensus$Symbol
     if(!isTRUE(ggplt)){
       heatmaply(mat, labRow = labrow, col_side_colors = df,
+                colors = viridis(n=256, alpha = 1, begin = 0, end = 1, option = "magma"),
                 col_side_palette = ann, labCol = as.character(vsd[[sampleName]] ), fontsize_row = fsr,
-                margins = c(50,50,20,0))}
+                margins = c(50,50,20,0)) }
     else{
       ggheatmap(mat, labRow = labrow, col_side_colors = df,
               col_side_palette = ann, labCol = as.character(vsd[[sampleName]] ), fontsize_row = fsr,
@@ -2182,21 +2272,21 @@ boxViolin <- function(datos=NULL, vsd=NULL, names=NULL, boxplotswitch=NULL,
 
 
 choices_brewer <- list(
-  "Blues" = brewer_pal(palette = "Blues")(9),
-  "Greens" = brewer_pal(palette = "Greens")(9),
-  "Reds" = brewer_pal(palette = "Reds")(9),
-  "Oranges" = brewer_pal(palette = "Oranges")(9),
-  "Purples" = brewer_pal(palette = "Purples")(9),
-  "Greys" = brewer_pal(palette = "Greys")(9)
+  "Blues" = scales::brewer_pal(palette = "Blues")(9),
+  "Greens" = scales::brewer_pal(palette = "Greens")(9),
+  "Reds" = scales::brewer_pal(palette = "Reds")(9),
+  "Oranges" = scales::brewer_pal(palette = "Oranges")(9),
+  "Purples" = scales::brewer_pal(palette = "Purples")(9),
+  "Greys" = scales::brewer_pal(palette = "Greys")(9)
 )
 
 choices_brewer2 <- list(
-  as.list(rev(brewer_pal(palette = "Blues")(9))),
-  as.list(rev(brewer_pal(palette = "Greens")(9))),
-  as.list(rev(brewer_pal(palette = "Reds")(9))),
-  as.list(rev(brewer_pal(palette = "Oranges")(9))),
-  as.list(rev(brewer_pal(palette = "Purples")(9))),
-  as.list(rev(brewer_pal(palette = "Greys")(9)))
+  as.list(rev(scales::brewer_pal(palette = "Blues")(9))),
+  as.list(rev(scales::brewer_pal(palette = "Greens")(9))),
+  as.list(rev(scales::brewer_pal(palette = "Reds")(9))),
+  as.list(rev(scales::brewer_pal(palette = "Oranges")(9))),
+  as.list(rev(scales::brewer_pal(palette = "Purples")(9))),
+  as.list(rev(scales::brewer_pal(palette = "Greys")(9)))
 )
 
 
@@ -2406,7 +2496,7 @@ krtp <- function(res, specie="Mm", pval, fcdown,
   res2 <- res[ res$padj <pval & (res$log2FoldChange<(fcdown) | res$log2FoldChange>fcup),]
   res3 <- as.data.frame(res2)
   res3$genes <- rownames(res3)
-  genes <- left_join(annot, res3, by = c("V1"="genes"))
+  genes <- left_join(annot, res3, by = c("V1"="ENSEMBL"))
   sig <- which( !is.na(genes$padj) )
   genes <- genes[sig,]
   A <- data.frame(chr = paste0("chr",genes$V2), start = genes$V3,
@@ -2849,6 +2939,7 @@ visnetLegend <- function(kggDT = NULL, rows = NULL){
         )
       )
     }
+
 ## myggwordcloud ############################
 myggwordcloud <- function(data, bg="white"){
   df <- data

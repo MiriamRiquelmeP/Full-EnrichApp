@@ -523,7 +523,7 @@
             background-color: rgb(52,62,72);
           }
           
-          .irs-min, .irs-max {
-              color: rgb(215,215,215);
-              background-color: rgb(45,55,65);
+          .irs-min, .irs-max, .irs--shiny, .irs-grid-text {
+              color: rgb(215,215,215) !important;
+              background-color: rgb(45,55,65) !important;
           }

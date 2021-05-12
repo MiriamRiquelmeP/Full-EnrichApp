@@ -2,7 +2,6 @@ library(shiny)
 library(shinydashboard)
 library(shinydashboardPlus)
 library(shiny.router)
-library(shinyWidgets)
 library(shinyjs)
 library(networkD3)
 library(dplyr)
@@ -20,7 +19,7 @@ ui <- dashboardPage(
                   tags$li(class = "dropdown", actionButton("statButton", "Stats",
                                    style="margin-top:8px; margin-right: 15px"))
                   ),
-  dashboardSidebar(disable = TRUE),
+  dashboardSidebar(disable = FALSE),
   dashboardBody(
       setShadow(class = "box"),
       tags$head(tags$style(HTML('
@@ -34,20 +33,19 @@ ui <- dashboardPage(
       fluidRow(
           column(width = 6, offset = 0,
                  flipBox(
-                     width = 2,
+                     width = 12,
                      id = 1,
-                     main_img = "https://image.flaticon.com/icons/svg/189/189664.svg",
-                     header_img = "https://image.flaticon.com/icons/svg/119/119595.svg",
-                     front_title = "Multiomic interactive tools set",
-                     back_title = "About us",
-                     front_btn_text = "About us", 
-                     "With this two applications, a complete set of graphics and tables 
+                     front = div(
+                       class = "text-center",
+                       h1("Multiomic interactive tools set"),
+                       img(src="https://image.flaticon.com/icons/svg/189/189664.svg",
+                           height = "100px"),
+                       p("With this two applications, a complete set of graphics and tables 
           can be obtained from an enrichment analysis based on several databases 
           or functions applied. Firstly, depending on the type of data input, different 
           results may be achieved, since each plot depends on a serie of needs 
-          (can be seen in the interactive image on the right hand side). 
-          
-                The more complete the element we introduce, the more information we 
+          (can be seen in the interactive image on the right hand side)."),
+          p("The more complete the element we introduce, the more information we 
           can generate from it. Thus, by adding an Expression Matrix 
           and a table with the information corresponding 
           to the samples (such as the group to which they belong, sex, age...), 
@@ -56,18 +54,21 @@ ui <- dashboardPage(
           Expression Plots and the functional gene Enrichment Plots. From a single Gene List 
           we can only obtain the gene names to perform the Enrichment Plots but, if we introduce 
           the lists with its statistical values, we can extend the analysis to many Statistics Plots 
-          that imply knowing the Pval and the logFC of each gene. Finally, if we enter a DESeq 
+          that imply knowing the Pval and the logFC of each gene."),
+          p("Finally, if we enter a DESeq 
           object, we can have all the different information seen before.
-                     
-                Hence, if we want to enter data in gene list or expression matrix format, 
+          Hence, if we want to enter data in gene list or expression matrix format, 
             please use the link to Simple Enrichment below. If you have a DESeq object 
-            already generated, you may proceed via DESeq enrichment link to the tool.",
-                     
-                     back_content = tagList(
+            already generated, you may proceed via DESeq enrichment link to the tool.")
+                     ),
+                     back = div(
+                       class = "text-center",
+                       h1("About us"),
+                       tagList(
                          column(
-                             width = 12,
-                             align = "center",
-                             HTML("<img src='dna-svg-small-13.gif', width='100px'><br>
+                           width = 12,
+                           align = "center",
+                           HTML("<img src='dna-svg-small-13.gif', width='100px'><br>
                   <h4>Authors:<br><br>
     Miriam Riquelme Pérez 
     <a href='https://www.linkedin.com/in/miriam-riquelme-perez/' target='_blank'> 
@@ -79,6 +80,7 @@ ui <- dashboardPage(
     </a> <a href='mailto:fernando.perez@ffis.es'> <img src='email.svg'></a></h4><br>
     For any suggestion or bug, please contact us")
                          )
+                       )
                      )
                  )
           ),
@@ -113,9 +115,10 @@ ui <- dashboardPage(
                               exit = animations$fading_exits$fadeOutRightBig
                           ),
                           box(
-                              width = 15,
+                              width = 12,
                               status = "primary",
                               height = "150px",
+                              solidHeader = TRUE,
                               title = tags$strong("EnrichApp 2020"),
                               background = "light-blue",
                               tags$h4(
@@ -212,7 +215,8 @@ ui <- dashboardPage(
                               exit = animations$fading_exits$fadeOutLeftBig
                           ),
                           box(
-                              width = 15,
+                              width = 12,
+                              solidHeader = TRUE,
                               status = "primary",
                               height = "150px",
                               title = tags$strong("EnrichApp 2020"),
