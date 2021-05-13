@@ -95,7 +95,7 @@ sidebar <- dashboardSidebar(useShinyalert(),
                             # sidebarMenu(fluidRow(
                             #             column(width = 11,
                             #               menuItem(uiOutput("sampleFile"))))),
-                            sidebarMenu(id="menuimport",sidebarMenuOutput("importvw")),
+                            #sidebarMenu(id="menuimport",sidebarMenuOutput("importvw")),
                             sidebarMenu(id = "previewMenu", sidebarMenuOutput("prevw")),
                             sidebarMenu("", sidebarMenuOutput("menu")),
                             # tags$br(),
@@ -133,11 +133,11 @@ body <- dashboardBody(
                       encoding = "UTF-8"
                 )$value),
       # import tab ######
-      tabItem(tabName = "tabimport",
-              source(file = "ui-import-tab.R",
-                     local=TRUE,
-                     encoding = "UTF-8"
-              )$value),
+      # tabItem(tabName = "tabimport",
+      #         source(file = "ui-import-tab.R",
+      #                local=TRUE,
+      #                encoding = "UTF-8"
+      #         )$value),
       # preview tab ######
       tabItem(tabName = "preview",
               source(file = "ui-preview-tab.R",
@@ -273,18 +273,33 @@ server <- function(input, output, session) {
   })
 
   # Acciones al pulsar boton generar DESeq ###################
-  observeEvent(input$applyTest, {
-    countdata$sample <- countdata$sample %>% mutate_at(.vars = vars(-1), ~as.factor(.) )
-    deseqObj <- DESeqDataSetFromMatrix(countData = countdata$count, 
-                                        colData = DataFrame(countdata$sample),
-                                        design = ~1)
-    design(deseqObj) <- as.formula(paste("~", input$testVariablePicker ))
-    if(input$testAlgorithmPicker == "wald"){
-      datos$dds <- DESeq(deseqObj, test = "Wald")
-    }
-    if(input$testAlgorithmPicker == "lrt"){
-      datos$dds <- DESeq(deseqObj, test = "LRT", reduced = ~1, parallel = TRUE)
+  # observeEvent(input$applyTest, {
+  #   countdata$sample <- countdata$sample %>% mutate_at(.vars = vars(-1), ~as.factor(.) )
+  #   deseqObj <- DESeqDataSetFromMatrix(countData = countdata$count, 
+  #                                       colData = DataFrame(countdata$sample),
+  #                                       design = ~1)
+  #   design(deseqObj) <- as.formula(paste("~", input$testVariablePicker ))
+  #   if(input$testAlgorithmPicker == "wald"){
+  #     datos$dds <- DESeq(deseqObj, test = "Wald")
+  #   }
+  #   if(input$testAlgorithmPicker == "lrt"){
+  #     datos$dds <- DESeq(deseqObj, test = "LRT", reduced = ~1, parallel = TRUE)
+  #     }
+  # })
+  observeEvent(input$testVariablePicker, {
+    if(input$testVariablePicker!=""){
+        countdata$sample <- countdata$sample %>% mutate_at(.vars = vars(-1), ~as.factor(.) )
+        deseqObj <- DESeqDataSetFromMatrix(countData = countdata$count, 
+                                           colData = DataFrame(countdata$sample),
+                                           design = ~1)
+        design(deseqObj) <- as.formula(paste("~", input$testVariablePicker ))
+          #    if(input$testAlgorithmPicker == "wald"){
+          datos$dds <- DESeq(deseqObj, test = "Wald")
       }
+    #    }
+    # if(input$testAlgorithmPicker == "lrt"){
+    #   datos$dds <- DESeq(deseqObj, test = "LRT", reduced = ~1, parallel = TRUE)
+    # }
   })
   # Acciones al cargar fichero deseq ##########################
   observeEvent(design(), {
@@ -555,7 +570,8 @@ server <- function(input, output, session) {
   
   # InputDesign de objeto deseq ###########################
   output$design <- renderUI({
-        validate(need(datos$dds,""))
+        validate(need(datos$dds,""), 
+                 need(input$matrixDeseq=="do", "") )
           opciones <- as.list(seq_len(length(resultsNames(datos$dds)[-1] )))
           names(opciones) <- resultsNames(datos$dds)[-1]
           pickerInput(
@@ -576,7 +592,7 @@ server <- function(input, output, session) {
       names(opciones) <- resultsNames(datos$dds)[-1]
       pickerInput(
         inputId = "designPicker",
-        label = "4. Select design",
+        label = "5. Select design",
         choices = opciones,
         options = list(title = "Design"),
         selected = NULL
@@ -613,14 +629,14 @@ server <- function(input, output, session) {
     )
   })
   
-  output$importvw <- renderMenu({
-    validate(need(countdata$sample,""),
-             need(countdata$count,""))
-    sidebarMenu(
-    menuItem("5. Import view",
-             tabName = "tabimport",
-             icon = icon("file-import")))
-  })
+  # output$importvw <- renderMenu({
+  #   validate(need(countdata$sample,""),
+  #            need(countdata$count,""))
+  #   sidebarMenu(
+  #   menuItem("5. Import view",
+  #            tabName = "tabimport",
+  #            icon = icon("file-import")))
+  # })
   # ui selector sample groups ###################
   output$sampleGroup <- renderUI({
     validate(need(datos$dds, ""))
@@ -641,54 +657,21 @@ server <- function(input, output, session) {
         opciones <- as.list(names(countdata$sample))
         pickerInput(
           inputId = "testVariablePicker",
-          label = "6. Select variable to test",
+          label = "4. Select variable to test",
           choices = opciones,
           options = list(title = "Variable"),
           selected = NULL
         ) 
           })
-  # TextTestAlgorithm ###############
-  output$textTestAlgorithm <- renderUI({
-    validate(
-      need(
-        ( !is.null(input$testVariablePicker) & input$testVariablePicker != ""),"")
-      )
-    HTML(paste0(tags$p("Select Wald's test or Likelihood Ratio Test."),
-    tags$p("Wald's test performs pairwise test using first category as reference."),
-    tags$p("LRT performs comparison between full and reduced model"),tags$br()
-    ))
-  })
-  # testAlgorithm #################
-  output$testAlgorithm <- renderUI({
-    validate(
-      need(
-        ( !is.null(input$testVariablePicker) & input$testVariablePicker != ""),"")
-      )
-    pickerInput(
-          inputId = "testAlgorithmPicker",
-          label = "7. Select test",
-          choices = list("Wald" = "wald", "LRT" = "lrt"),
-          options = list(title = "Test"),
-          selected = NULL
-        )
-  })
-  # Test Button ##########
-  output$testButton <- renderUI({
-    validate(
-      need(( !is.null(input$testAlgorithmPicker) & input$testAlgorithmPicker != ""),"")
-      )
-    actionButton("applyTest", label = "Click to generate DESeq object")
-  })
-  
   # Tabla colData ################
   output$coldataTable <- renderDT({
     validate(need(countdata$sample,""))
-    countdata$sample %>% datatable()
+    countdata$sample %>% datatable(options = list(scrollX=TRUE, scrollY="400px"))
   })
     # Tabla countData ################
   output$expressionTable <- DT::renderDataTable({
     validate(need(countdata$sample,""))
-    countdata$count %>% head(10) %>% DT::datatable()
+    countdata$count %>% head(10) %>% DT::datatable(options = list(scrollX=TRUE, scrollY="400px"))
   })
   
   # ........................####

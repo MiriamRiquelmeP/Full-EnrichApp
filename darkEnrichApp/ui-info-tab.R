@@ -1,7 +1,7 @@
 fluidPage(
     br(),
     fluidRow(
-        column(width = 3 ,
+        column(width = 3,
                box(width = 12,
                    pickerInput(
                        inputId = "specie",
@@ -31,6 +31,7 @@ fluidPage(
                        
                               menuItem(uiOutput("sampleFile")))
                        )),
+                   uiOutput("testVariable"),
                    uiOutput("designMatrix")
                    ) # fin box
                ),
@@ -61,5 +62,20 @@ fluidPage(
               h3("How to download the app"),
               p("This app can be found on ",
                 a("GitHub.", href = "https://github.com/MiriamRiquelmeP/Full-EnrichApp") ) ),
-    ) )
+    ) ),
+    fluidRow(
+        column(width = 6,
+               # box(width = 12, 
+               #     title = "Sample table",
+                   DTOutput("coldataTable")
+               #)
+        ),
+        column(width = 6,
+               # box(width = NULL,
+               #     title = "Expression matrix (first 10 rows)",
+                   #div(style = 'overflow-x: scroll',
+               DT::dataTableOutput("expressionTable")#)
+                   #)
+        )
+    )
 )
