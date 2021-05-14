@@ -108,7 +108,6 @@ fluidPage(
                      tabPanel(
                          title = "Statistical - Expression values",
                          DTOutput("preview"),
-                         actionButton("resetrow","Clear selection"),
                          tags$br(),
                          textOutput("lostgenes")
                      ),

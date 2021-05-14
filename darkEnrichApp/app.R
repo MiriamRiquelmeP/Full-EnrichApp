@@ -334,7 +334,7 @@ server <- function(input, output, session) {
                        rownames(res$sh),"' target='_blank'>",rownames(res$sh),"</a>")
         res$sh <- cbind(`User_GeneId`= links, res$sh)
         res$lostgene <- length(which(is.na(res$sh$ENTREZ)))
-        vsd$data <- vst(datos$dds)
+        #vsd$data <- vst(datos$dds)
         rlog$datos <- rlog(datos$dds)
         logfcRange$min <- min(res$sh$log2FoldChange)
         logfcRange$max <- max(res$sh$log2FoldChange)
@@ -912,17 +912,13 @@ server <- function(input, output, session) {
                )
     )   %>% 
       formatStyle('log2FoldChange',
-                      backgroundColor = styleInterval(0,  c(input$downColor,input$upColor) ) ) %>% 
+                      backgroundColor = styleInterval(c(logfc()[1],logfc()[2]) , 
+                                                      c(input$downColor,"gray",input$upColor) ) ) %>% 
       formatStyle('baseMean', background = styleColorBar(res.sh$baseMean, "#357E43") )
   })
   
   output$lostgenes <- renderText({
     print( paste0(res$lostgene," out of ", dim(res$sh)[1], " have no ENTREZ ID. These genes will be missing in enrichment analysis"))
-  })
-  
-  tableProxy <- dataTableProxy("preview")
-  observeEvent(input$resetrow, {
-    tableProxy %>% selectRows(NULL)
   })
   
 # preview samples ###################
@@ -1090,12 +1086,12 @@ output$texto2 <- renderTable( digits = -2, {
   # view HEATMAP data ###################
   output$heat <- renderPlotly( {
     validate(need(datos$dds, ""),
-             need(vsd$data, "Load file to render plot"),
+             need(rlog$datos, "Load file to render plot"),
              need(variables(),"Load condition to render plot" ),
              need(samplename(),"Load condition to render plot" ) )
-    p <- heat2(vsd$data, n=numheatmap(), intgroup = variables(), sampleName = samplename(),
+    p <- heat2(rlog$datos, n=numheatmap(), intgroup = variables(), sampleName = samplename(),
          specie=specie(), customColor = coloresPCA$colores(), annot=conversion$ids )
-    q <- heat2(vsd$data, n=numheatmap(), intgroup = variables(), sampleName = samplename(),
+    q <- heat2(rlog$datos, n=numheatmap(), intgroup = variables(), sampleName = samplename(),
                specie=specie(), customColor = coloresPCA$colores(), ggplt = TRUE, annot=conversion$ids )
     svg$heat <- q
     print(p)
@@ -1110,12 +1106,12 @@ output$downHeat <- downloadHandler(
   output$cluster <- renderPlotly( {
     validate(
       need(datos$dds, ""),
-      need(vsd$data, "Load file to render plot"),
+      need(rlog$datos, "Load file to render plot"),
       need(variables(), "Load condition to render plot"),
       need(samplename(), "Load condition to render plot")
     )
-    p <- cluster(vsd$data, intgroup = samplename())
-    q <- cluster(vsd$data, intgroup = samplename(), ggplt=TRUE)
+    p <- cluster(rlog$datos, intgroup = samplename())
+    q <- cluster(rlog$datos, intgroup = samplename(), ggplt=TRUE)
     svg$cluster <- q
     print(p)
   })
@@ -1235,11 +1231,11 @@ output$downKrpt <- downloadHandler(
   output$boxviolin <- renderPlotly({
           validate(need(datos$dds, "Load file and condition to render Volcano"),
                    need(variables(),"Load condition to render plot" ),
-                   need(vsd$data, ""),
+                   need(rlog$datos, ""),
                    need(variables(), ""),
                    need(samplename(),"" ),
                    need(coloresPCA$colores(), ""))
-          p <- boxViolin( names = samplename() , vsd=vsd$data, boxplotswitch=boxplotswitch(),
+          p <- boxViolin( names = samplename() , vsd=rlog$datos, boxplotswitch=boxplotswitch(),
                     intgroup=variables(), customColor = coloresPCA$colores() ) 
           svg$boxviolin <- p
           print(p)
@@ -3092,7 +3088,7 @@ output$barKeggAll <- downloadHandler(
       ## Asigna variables
           rlogdatos <- rlog$datos; colorespca <- coloresPCA$colores();
           variables <- variables(); samplename <- samplename() 
-          vsddata <- vsd$data; boxplotswitch <- boxplotswitch()
+          vsddata <- rlog$datos; boxplotswitch <- boxplotswitch()
           specie <- specie(); numheatmap <- numheatmap()
           ressh <- res$sh; datosdds <- datos$dds; gene <- gene(); 
           padj <- padj(); logfc <- logfc(); genesvolcano <- genesVolcano();
