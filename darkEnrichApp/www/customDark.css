@@ -527,3 +527,6 @@
               color: rgb(215,215,215) !important;
               background-color: rgb(45,55,65) !important;
           }
+          #lostgenes {
+              color: chartreuse !important;
+          }
